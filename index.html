@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevMemory - Jogo da Memória Gamificado</title>
+  
+  <!-- Fontes Google: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Devicon CDN (Logos e Ícones de Tecnologias) -->
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
+  
+  <!-- Font Awesome CDN (Ícones de HUD e Interface) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Efeitos de Fundo Decorativos -->
+  <div class="bg-glow bg-glow-cyan"></div>
+  <div class="bg-glow bg-glow-purple"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="container">
+    <!-- Cabeçalho Principal -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-tag">&lt;dev&gt;</span>
+        <h1>Memory<span>.tech</span></h1>
+        <span class="logo-tag">&lt;/dev&gt;</span>
+      </div>
+      <p class="subtitle">Encontre todos os pares de tecnologias antes que o tempo se esgote!</p>
+    </header>
+
+    <!-- Painel de Status (Dashboard / HUD Gamificado) -->
+    <section class="dashboard" aria-label="Painel de Status do Jogo">
+      <!-- Tempo Restante (Countdown) -->
+      <div class="hud-card" id="timer-card">
+        <div class="hud-icon"><i class="fa-solid fa-stopwatch"></i></div>
+        <div class="hud-info">
+          <span class="hud-label">Tempo Restante</span>
+          <span class="hud-value" id="timer-display">60s</span>
+        </div>
+      </div>
+
+      <!-- Movimentos / Jogadas -->
+      <div class="hud-card">
+        <div class="hud-icon"><i class="fa-solid fa-arrow-pointer"></i></div>
+        <div class="hud-info">
+          <span class="hud-label">Movimentos</span>
+          <span class="hud-value" id="moves-display">0</span>
+        </div>
+      </div>
+
+      <!-- Pontuação Atual -->
+      <div class="hud-card highlight-card">
+        <div class="hud-icon"><i class="fa-solid fa-coins"></i></div>
+        <div class="hud-info">
+          <span class="hud-label">Score</span>
+          <span class="hud-value" id="score-display">0</span>
+        </div>
+        <!-- Feedback flutuante de pontos (+150, -20, etc) -->
+        <span class="score-popup" id="score-popup"></span>
+      </div>
+
+      <!-- Botão de Reinício Rápido -->
+      <button id="btn-restart" class="btn-restart" title="Reiniciar Partida">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>Reiniciar</span>
+      </button>
+    </section>
+
+    <!-- Barra de Progresso do Tempo -->
+    <div class="timer-bar-container">
+      <div class="timer-bar" id="timer-bar"></div>
+    </div>
+
+    <!-- Tabuleiro de Cartas (Grid 4x4) -->
+    <main class="game-board" id="game-board" aria-label="Tabuleiro do Jogo da Memória">
+      <!-- Cartas geradas dinamicamente via script.js -->
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+      <p>Desenvolvido com <i class="fa-solid fa-code"></i> e <strong>Vanilla JS</strong></p>
+    </footer>
+  </div>
+
+  <!-- Modal Dinâmico de Fim de Jogo (Vitória ou Game Over) -->
+  <div class="modal-overlay" id="game-modal" aria-hidden="true" role="dialog">
+    <div class="modal-content" id="modal-box">
+      <!-- Ícone Dinâmico (Troféu ou Caveira/Alerta) -->
+      <div class="modal-icon-wrapper" id="modal-icon-wrapper">
+        <i class="fa-solid fa-trophy" id="modal-icon"></i>
+      </div>
+
+      <h2 class="modal-title" id="modal-title">Missão Cumprida!</h2>
+      <p class="modal-subtitle" id="modal-subtitle">Você compilou o código antes do prazo estourar.</p>
+
+      <!-- Grade de Estatísticas Finais -->
+      <div class="modal-stats-grid">
+        <div class="modal-stat-item">
+          <i class="fa-solid fa-stopwatch"></i>
+          <span class="label">Tempo Restante</span>
+          <span class="value" id="modal-final-time">0s</span>
+        </div>
+        <div class="modal-stat-item">
+          <i class="fa-solid fa-arrow-pointer"></i>
+          <span class="label">Movimentos</span>
+          <span class="value" id="modal-final-moves">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <i class="fa-solid fa-bullseye"></i>
+          <span class="label">Pares Concluídos</span>
+          <span class="value" id="modal-final-pairs">0 / 8</span>
+        </div>
+        <div class="modal-stat-item highlight-stat">
+          <i class="fa-solid fa-trophy"></i>
+          <span class="label">Score Final</span>
+          <span class="value" id="modal-final-score">0 pts</span>
+        </div>
+      </div>
+
+      <!-- Botão de Ação -->
+      <button id="btn-modal-action" class="btn-action">
+        <i class="fa-solid fa-play"></i>
+        <span id="modal-btn-text">Jogar Novamente</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Script da Lógica e Gamificação -->
+  <script src="script.js"></script>
+</body>
+</html>
