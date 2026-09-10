@@ -9,7 +9,9 @@
   <meta name="theme-color" content="#00f2fe">
   <meta name="description" content="Jogo da Memória Multidisciplinar, Offline-First e Gamificado para Escolas, Universidades e Treinamentos.">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -94,7 +96,12 @@
       <!-- Modos de Jogo e Dificuldade -->
       <section class="game-options-grid">
         <div class="option-group">
-          <span class="option-label"><i class="fa-solid fa-gamepad"></i> Modo de Jogo</span>
+          <div class="option-header-row">
+            <span class="option-label"><i class="fa-solid fa-gamepad"></i> Modo de Jogo</span>
+            <button type="button" id="btn-modes-info" class="btn-info-link" title="Entenda as regras de cada modo">
+              <i class="fa-solid fa-circle-question"></i> Como funciona?
+            </button>
+          </div>
           <div class="segmented-control">
             <label>
               <input type="radio" name="game-mode" value="timed" checked>
@@ -344,6 +351,63 @@
 
       <button onclick="document.getElementById('avatar-modal').classList.remove('active')" class="btn-modal-secondary" style="width: 100%; margin-top: 20px;">
         Fechar
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL EXPLICATIVO DOS MODOS DE JOGO ==================== -->
+  <div id="modes-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content modal-modes-content">
+      <div class="modal-icon-top" style="color: var(--accent-primary);"><i class="fa-solid fa-gamepad"></i></div>
+      <h2 class="modal-title">Modos de Jogo & Regras</h2>
+      <p class="modal-subtitle">Descubra a dinâmica e os objetivos pedagógicos de cada modo:</p>
+
+      <div class="modes-explanation-grid">
+        <!-- Modo 1: Tempo -->
+        <div class="mode-explain-card">
+          <div class="mode-explain-header">
+            <span class="mode-badge-pill timed">⚡ Contra o Tempo</span>
+            <span class="mode-tagline">Agilidade & Raciocínio Rápido</span>
+          </div>
+          <p class="mode-desc">Você corre contra um cronômetro regressivo (45s no Fácil, 60s no Médio e 90s no Difícil) para desvendar todos os pares antes que o tempo zere.</p>
+          <ul class="mode-features">
+            <li><i class="fa-solid fa-bolt"></i> <strong>Bônus de Rapidez:</strong> Cada segundo que sobrar no relógio ao vencer concede +12 pontos extras.</li>
+            <li><i class="fa-solid fa-triangle-exclamation"></i> <strong>Penalidade por Erro:</strong> Erros descontam 15 pontos para incentivar precisão.</li>
+            <li><i class="fa-solid fa-bell"></i> <strong>Tensão Final:</strong> O relógio avisa com alertas visuais e sonoros nos últimos 10 segundos!</li>
+          </ul>
+        </div>
+
+        <!-- Modo 2: Combo -->
+        <div class="mode-explain-card">
+          <div class="mode-explain-header">
+            <span class="mode-badge-pill combo">🎯 Combo & Precisão</span>
+            <span class="mode-tagline">Foco Mental & Consistência</span>
+          </div>
+          <p class="mode-desc">Sem limite de tempo! O objetivo principal é manter a concentração e acertar pares em sequência sem falhar.</p>
+          <ul class="mode-features">
+            <li><i class="fa-solid fa-fire"></i> <strong>Multiplicadores Crescentes:</strong> Acertos contínuos ativam 🔥 2x, 3x, 4x Combo!</li>
+            <li><i class="fa-solid fa-arrow-trend-up"></i> <strong>Pontuação Exponencial:</strong> Cada par consecutivo concede <code>(combo - 1) × 30</code> de bônus progressivo.</li>
+            <li><i class="fa-solid fa-rotate-left"></i> <strong>Risco e Retorno:</strong> Errar qualquer par zera o streak de volta para 1x.</li>
+          </ul>
+        </div>
+
+        <!-- Modo 3: Zen -->
+        <div class="mode-explain-card">
+          <div class="mode-explain-header">
+            <span class="mode-badge-pill zen">🧘 Modo Zen / Estudo</span>
+            <span class="mode-tagline">Autoestudo & Aprendizagem sem Pressão</span>
+          </div>
+          <p class="mode-desc">Projetado para fixação de novos conceitos, salas de aula inclusivas ou sessões de estudo relaxantes.</p>
+          <ul class="mode-features">
+            <li><i class="fa-solid fa-shield-heart"></i> <strong>Sem Game Over:</strong> Tempo livre para explorar sem cronômetro regressivo.</li>
+            <li><i class="fa-solid fa-face-smile"></i> <strong>Sem Penalidades:</strong> Erros não reduzem sua pontuação.</li>
+            <li><i class="fa-solid fa-lightbulb"></i> <strong>Foco Pedagógico:</strong> Permite ler e memorizar as pílulas de curiosidade com calma.</li>
+          </ul>
+        </div>
+      </div>
+
+      <button onclick="document.getElementById('modes-modal').classList.remove('active')" class="btn-modal-primary" style="width: 100%; margin-top: 18px;">
+        Entendi, Vamos Jogar!
       </button>
     </div>
   </div>

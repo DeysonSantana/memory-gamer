@@ -85,6 +85,7 @@ class MemoryMasterApp {
     this.gameModal = document.getElementById('game-modal');
     this.shareModal = document.getElementById('share-modal');
     this.avatarModal = document.getElementById('avatar-modal');
+    this.modesModal = document.getElementById('modes-modal');
   }
 
   setupEventListeners() {
@@ -108,6 +109,11 @@ class MemoryMasterApp {
     document.getElementById('nav-lobby')?.addEventListener('click', () => this.navigateTo('lobby'));
     document.getElementById('nav-builder')?.addEventListener('click', () => this.openDeckBuilder());
     document.getElementById('nav-leaderboard')?.addEventListener('click', () => this.openLeaderboard());
+
+    // Explicação dos Modos de Jogo
+    document.getElementById('btn-modes-info')?.addEventListener('click', () => {
+      this.openModal(this.modesModal);
+    });
 
     // Botão Iniciar Jogo no Lobby
     document.getElementById('btn-start-game')?.addEventListener('click', () => this.startGame());
@@ -262,13 +268,17 @@ class MemoryMasterApp {
       cardEl.dataset.instanceId = cardData.instanceId;
 
       let frontHtml = '';
+      const visualEmoji = cardData.visual || (cardData.side === 'A' ? '💡' : '✨');
+
       if (cardData.isIcon && cardData.icon) {
         frontHtml = `
-          <i class="${cardData.icon}"></i>
+          <div class="card-visual-icon"><i class="${cardData.icon}"></i></div>
           <span class="card-title">${cardData.content}</span>
+          ${cardData.subtext ? `<span class="card-subtext">${cardData.subtext}</span>` : ''}
         `;
       } else {
         frontHtml = `
+          <div class="card-visual-emoji">${visualEmoji}</div>
           <span class="card-title">${cardData.content}</span>
           ${cardData.subtext ? `<span class="card-subtext">${cardData.subtext}</span>` : ''}
         `;
@@ -482,13 +492,22 @@ class MemoryMasterApp {
     const list = document.getElementById('builder-pairs-list');
     if (!list) return;
 
+    const visualA = pairData?.cardA?.visual || '💡';
+    const visualB = pairData?.cardB?.visual || '✨';
+
     const row = document.createElement('div');
     row.className = 'builder-pair-row';
     row.innerHTML = `
       <div class="row-inputs">
-        <input type="text" class="input-term-a" placeholder="Termo A (ex: H₂O)" value="${pairData?.cardA?.content || ''}">
-        <input type="text" class="input-term-b" placeholder="Termo B (ex: Água)" value="${pairData?.cardB?.content || ''}">
-        <input type="text" class="input-curiosity" placeholder="Curiosidade / Pílula de aprendizado" value="${pairData?.curiosity || ''}">
+        <div class="pair-card-editor">
+          <input type="text" class="input-visual-a" placeholder="Ícone A" value="${visualA}" title="Emoji ou Ícone para Carta A" maxlength="4">
+          <input type="text" class="input-term-a" placeholder="Termo A (ex: H₂O)" value="${pairData?.cardA?.content || ''}">
+        </div>
+        <div class="pair-card-editor">
+          <input type="text" class="input-visual-b" placeholder="Ícone B" value="${visualB}" title="Emoji ou Ícone para Carta B" maxlength="4">
+          <input type="text" class="input-term-b" placeholder="Termo B (ex: Água)" value="${pairData?.cardB?.content || ''}">
+        </div>
+        <input type="text" class="input-curiosity" placeholder="Curiosidade pedagógica explicativa" value="${pairData?.curiosity || ''}">
       </div>
       <button type="button" class="btn-remove-row" title="Remover par"><i class="fa-solid fa-trash"></i></button>
     `;
@@ -525,15 +544,17 @@ class MemoryMasterApp {
     const pairs = [];
 
     rows.forEach((row, idx) => {
+      const visualA = row.querySelector('.input-visual-a')?.value.trim() || '💡';
       const termA = row.querySelector('.input-term-a').value.trim();
+      const visualB = row.querySelector('.input-visual-b')?.value.trim() || '✨';
       const termB = row.querySelector('.input-term-b').value.trim();
       const cur = row.querySelector('.input-curiosity').value.trim();
 
       if (termA && termB) {
         pairs.push({
           id: `custom_pair_${idx}`,
-          cardA: { content: termA, subtext: 'Termo' },
-          cardB: { content: termB, subtext: 'Correspondência' },
+          cardA: { content: termA, subtext: 'Conceito', visual: visualA },
+          cardB: { content: termB, subtext: 'Correspondência', visual: visualB },
           curiosity: cur || `${termA} está diretamente ligado a ${termB}.`
         });
       }

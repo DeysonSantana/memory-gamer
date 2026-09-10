@@ -23,8 +23,10 @@ export class ShareManager {
           id: p.id,
           a: p.cardA?.content || '',
           as: p.cardA?.subtext || '',
+          va: p.cardA?.visual || '💡',
           b: p.cardB?.content || '',
           bs: p.cardB?.subtext || '',
+          vb: p.cardB?.visual || '✨',
           c: p.curiosity || ''
         }))
       };
@@ -70,8 +72,8 @@ export class ShareManager {
         isCustom: true,
         pairs: data.pairs.map((p, idx) => ({
           id: p.id || `pair_${idx}`,
-          cardA: { content: p.a, subtext: p.as || 'Termo' },
-          cardB: { content: p.b, subtext: p.bs || 'Par' },
+          cardA: { content: p.a, subtext: p.as || 'Termo', visual: p.va || '💡' },
+          cardB: { content: p.b, subtext: p.bs || 'Correspondência', visual: p.vb || '✨' },
           curiosity: p.c || `${p.a} corresponde a ${p.b}.`
         }))
       };

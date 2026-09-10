@@ -5,12 +5,15 @@
  * Estratégia: Cache-First com Fallback de Rede para funcionamento 100% offline.
  */
 
-const CACHE_NAME = 'memorymaster-v1.0.0';
+const CACHE_NAME = 'memorymaster-v1.1.0';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.json',
+  './icons/icon.svg',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './js/app.js',
   './js/audio.js',
   './js/themeManager.js',
@@ -28,7 +31,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Armazenando shell da aplicação em cache...');
+      console.log('[SW] Armazenando shell e ícones da aplicação em cache...');
       return cache.addAll(STATIC_ASSETS);
     }).then(() => self.skipWaiting())
   );
@@ -52,7 +55,6 @@ self.addEventListener('activate', (e) => {
 
 // Interceptação de requisições: Cache First com fallback para Network
 self.addEventListener('fetch', (e) => {
-  // Ignora requisições não-GET e esquemas externos de extensões
   if (e.request.method !== 'GET') return;
 
   e.respondWith(
@@ -61,7 +63,6 @@ self.addEventListener('fetch', (e) => {
         return cachedResponse;
       }
       return fetch(e.request).then((networkResponse) => {
-        // Armazena cópia no cache caso a requisição seja válida
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -70,7 +71,6 @@ self.addEventListener('fetch', (e) => {
         }
         return networkResponse;
       }).catch(() => {
-        // Fallback offline se for navegação HTML
         if (e.request.headers.get('accept')?.includes('text/html')) {
           return caches.match('./index.html');
         }
