@@ -1,140 +1,354 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark-neon">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevMemory - Jogo da Memória Gamificado</title>
+  <title>MemoryMaster - Plataforma Educacional Gamificada</title>
   
-  <!-- Fontes Google: Inter & JetBrains Mono -->
+  <!-- PWA & Meta Tags -->
+  <meta name="theme-color" content="#00f2fe">
+  <meta name="description" content="Jogo da Memória Multidisciplinar, Offline-First e Gamificado para Escolas, Universidades e Treinamentos.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Devicon CDN (Logos e Ícones de Tecnologias) -->
+
+  <!-- Devicon CDN (Ícones Oficiais de Tecnologia) -->
   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
-  
+
   <!-- Font Awesome CDN (Ícones de HUD e Interface) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Estilos Customizados -->
+
+  <!-- Folha de Estilos -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <!-- Efeitos de Fundo Decorativos -->
-  <div class="bg-glow bg-glow-cyan"></div>
-  <div class="bg-glow bg-glow-purple"></div>
-  <div class="grid-overlay"></div>
+  <div class="bg-glow-orb bg-glow-1"></div>
+  <div class="bg-glow-orb bg-glow-2"></div>
 
-  <div class="container">
-    <!-- Cabeçalho Principal -->
-    <header class="header">
-      <div class="logo">
-        <span class="logo-tag">&lt;dev&gt;</span>
-        <h1>Memory<span>.tech</span></h1>
-        <span class="logo-tag">&lt;/dev&gt;</span>
-      </div>
-      <p class="subtitle">Encontre todos os pares de tecnologias antes que o tempo se esgote!</p>
-    </header>
-
-    <!-- Painel de Status (Dashboard / HUD Gamificado) -->
-    <section class="dashboard" aria-label="Painel de Status do Jogo">
-      <!-- Tempo Restante (Countdown) -->
-      <div class="hud-card" id="timer-card">
-        <div class="hud-icon"><i class="fa-solid fa-stopwatch"></i></div>
-        <div class="hud-info">
-          <span class="hud-label">Tempo Restante</span>
-          <span class="hud-value" id="timer-display">60s</span>
-        </div>
+  <!-- Barra de Navegação Superior (Header) -->
+  <nav class="navbar" aria-label="Navegação Principal">
+    <div class="nav-container">
+      <div class="brand" id="nav-lobby">
+        <span class="brand-icon">🧠</span>
+        <h1 class="brand-title">Memory<span>Master</span></h1>
       </div>
 
-      <!-- Movimentos / Jogadas -->
-      <div class="hud-card">
-        <div class="hud-icon"><i class="fa-solid fa-arrow-pointer"></i></div>
-        <div class="hud-info">
-          <span class="hud-label">Movimentos</span>
-          <span class="hud-value" id="moves-display">0</span>
-        </div>
+      <div class="nav-links">
+        <span id="offline-badge" class="offline-badge hidden">
+          <i class="fa-solid fa-plane"></i> Offline
+        </span>
+
+        <button id="btn-install-pwa" class="nav-btn btn-pwa-install hidden" title="Instalar aplicativo">
+          <i class="fa-solid fa-download"></i>
+          <span>Instalar App</span>
+        </button>
+
+        <button id="nav-builder" class="nav-btn" title="Criar ou Importar Baralho">
+          <i class="fa-solid fa-plus"></i>
+          <span>Criar Baralho</span>
+        </button>
+
+        <button id="nav-leaderboard" class="nav-btn" title="Ver Ranking e Pódio">
+          <i class="fa-solid fa-trophy"></i>
+          <span>Pódio</span>
+        </button>
+
+        <button id="btn-sound-toggle" class="nav-btn icon-btn" title="Alternar Sons">
+          <i class="fa-solid fa-volume-high"></i>
+        </button>
+
+        <button id="btn-theme-toggle" class="nav-btn icon-btn" title="Alternar Tema Visual">
+          <i class="fa-solid fa-palette"></i>
+        </button>
       </div>
-
-      <!-- Pontuação Atual -->
-      <div class="hud-card highlight-card">
-        <div class="hud-icon"><i class="fa-solid fa-coins"></i></div>
-        <div class="hud-info">
-          <span class="hud-label">Score</span>
-          <span class="hud-value" id="score-display">0</span>
-        </div>
-        <!-- Feedback flutuante de pontos (+150, -20, etc) -->
-        <span class="score-popup" id="score-popup"></span>
-      </div>
-
-      <!-- Botão de Reinício Rápido -->
-      <button id="btn-restart" class="btn-restart" title="Reiniciar Partida">
-        <i class="fa-solid fa-rotate-right"></i>
-        <span>Reiniciar</span>
-      </button>
-    </section>
-
-    <!-- Barra de Progresso do Tempo -->
-    <div class="timer-bar-container">
-      <div class="timer-bar" id="timer-bar"></div>
     </div>
+  </nav>
 
-    <!-- Tabuleiro de Cartas (Grid 4x4) -->
-    <main class="game-board" id="game-board" aria-label="Tabuleiro do Jogo da Memória">
-      <!-- Cartas geradas dinamicamente via script.js -->
+  <!-- Container Principal das Telas da SPA -->
+  <div class="app-container">
+
+    <!-- ==================== TELA 1: LOBBY / SELEÇÃO ==================== -->
+    <main id="screen-lobby" class="screen active">
+      <!-- Barra de Perfil do Jogador -->
+      <section class="user-profile-bar">
+        <div class="user-profile-left">
+          <button id="user-avatar-btn" class="avatar-btn" title="Mudar Avatar">
+            <span id="user-avatar-display">🎓</span>
+          </button>
+          <div>
+            <label for="user-nickname" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Jogador</label><br>
+            <input type="text" id="user-nickname" class="nickname-input" value="Estudante" maxlength="18">
+          </div>
+        </div>
+        <button id="btn-share-deck" class="btn-action-tool" title="Compartilhar Baralho Escolhido">
+          <i class="fa-solid fa-share-nodes"></i> Compartilhar
+        </button>
+      </section>
+
+      <!-- Modos de Jogo e Dificuldade -->
+      <section class="game-options-grid">
+        <div class="option-group">
+          <span class="option-label"><i class="fa-solid fa-gamepad"></i> Modo de Jogo</span>
+          <div class="segmented-control">
+            <label>
+              <input type="radio" name="game-mode" value="timed" checked>
+              <span>⚡ Tempo</span>
+            </label>
+            <label>
+              <input type="radio" name="game-mode" value="combo">
+              <span>🎯 Combo</span>
+            </label>
+            <label>
+              <input type="radio" name="game-mode" value="zen">
+              <span>🧘 Zen</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <span class="option-label"><i class="fa-solid fa-layer-group"></i> Nível / Pares</span>
+          <div class="segmented-control">
+            <label>
+              <input type="radio" name="difficulty" value="easy">
+              <span>Fácil (6)</span>
+            </label>
+            <label>
+              <input type="radio" name="difficulty" value="medium" checked>
+              <span>Médio (8)</span>
+            </label>
+            <label>
+              <input type="radio" name="difficulty" value="hard">
+              <span>Difícil (12)</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Catálogo de Disciplinas e Baralhos -->
+      <h2 class="section-title"><i class="fa-solid fa-book-open"></i> Escolha uma Disciplina</h2>
+      <div id="deck-list-container" class="deck-grid">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+
+      <!-- Iniciar Jogo -->
+      <div class="start-bar">
+        <button id="btn-start-game" class="btn-primary-large">
+          <i class="fa-solid fa-play"></i>
+          <span>Iniciar Partida</span>
+        </button>
+      </div>
     </main>
 
-    <!-- Rodapé -->
-    <footer class="footer">
-      <p>Desenvolvido com <i class="fa-solid fa-code"></i> e <strong>Vanilla JS</strong></p>
-    </footer>
+    <!-- ==================== TELA 2: JOGO & HUD ==================== -->
+    <main id="screen-game" class="screen">
+      <!-- Cabeçalho da Partida -->
+      <div class="game-header-bar">
+        <div class="game-deck-badge">
+          <i class="fa-solid fa-bookmark" style="color: var(--accent-primary);"></i>
+          <span id="game-deck-title">Disciplina</span>
+        </div>
+        <div class="game-controls">
+          <button id="btn-restart-game" class="btn-hud-action" title="Reiniciar Partida">
+            <i class="fa-solid fa-rotate-right"></i> Reiniciar
+          </button>
+          <button id="btn-exit-game" class="btn-hud-action" title="Voltar ao Início">
+            <i class="fa-solid fa-arrow-left"></i> Sair
+          </button>
+        </div>
+      </div>
+
+      <!-- HUD Gamificado -->
+      <section class="game-hud">
+        <div class="hud-item" id="hud-timer-card">
+          <div class="hud-icon"><i class="fa-solid fa-clock"></i></div>
+          <div class="hud-text">
+            <span class="hud-label">Tempo</span>
+            <span class="hud-value" id="hud-timer">60s</span>
+          </div>
+        </div>
+
+        <div class="hud-item">
+          <div class="hud-icon"><i class="fa-solid fa-arrow-pointer"></i></div>
+          <div class="hud-text">
+            <span class="hud-label">Jogadas</span>
+            <span class="hud-value" id="hud-moves">0</span>
+          </div>
+        </div>
+
+        <div class="hud-item">
+          <div class="hud-icon"><i class="fa-solid fa-coins"></i></div>
+          <div class="hud-text">
+            <span class="hud-label">Score</span>
+            <span class="hud-value" id="hud-score">0</span>
+          </div>
+          <span id="hud-score-popup" class="score-popup"></span>
+        </div>
+
+        <span id="hud-combo-badge" class="combo-badge">🔥 2x Combo!</span>
+      </section>
+
+      <!-- Barra de Progresso do Tempo -->
+      <div class="timer-bar-wrapper">
+        <div id="hud-timer-bar" class="timer-bar"></div>
+      </div>
+
+      <!-- Pílula de Curiosidade Imediata (Microaprendizado) -->
+      <div id="curiosity-pill" class="curiosity-pill" aria-live="polite">
+        <i class="fa-solid fa-lightbulb"></i>
+        <span id="curiosity-text">Dica de aprendizagem aqui...</span>
+      </div>
+
+      <!-- Tabuleiro de Cartas (Grid Dinâmico 3D) -->
+      <div id="game-board" class="game-board cards-16">
+        <!-- Cartas geradas dinamicamente via script -->
+      </div>
+    </main>
+
+    <!-- ==================== TELA 3: CONSTRUTOR DE BARALHOS ==================== -->
+    <main id="screen-builder" class="screen">
+      <div class="builder-box">
+        <h2 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Construtor de Baralhos Educativos</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
+          Crie baralhos personalizados para qualquer disciplina ou importe planilhas CSV do Excel/Google Sheets.
+        </p>
+
+        <!-- Ferramentas Rápidas -->
+        <div class="builder-actions-top">
+          <label class="btn-action-tool" title="Importar arquivo CSV">
+            <i class="fa-solid fa-file-csv"></i> Importar CSV
+            <input type="file" id="file-import-csv" accept=".csv" style="display: none;">
+          </label>
+
+          <button type="button" id="btn-csv-template" class="btn-action-tool" title="Baixar Modelo de Planilha">
+            <i class="fa-solid fa-download"></i> Modelo CSV
+          </button>
+
+          <label class="btn-action-tool" title="Importar arquivo JSON">
+            <i class="fa-solid fa-file-code"></i> Importar JSON
+            <input type="file" id="file-import-json" accept=".json" style="display: none;">
+          </label>
+
+          <button type="button" id="btn-export-csv" class="btn-action-tool" title="Exportar Baralho Atual para CSV">
+            <i class="fa-solid fa-file-export"></i> Exportar CSV
+          </button>
+        </div>
+
+        <!-- Metadados do Baralho -->
+        <div class="form-group-row">
+          <input type="text" id="builder-deck-title" class="form-input" placeholder="Título do Baralho (ex: Genética Básica)">
+          <input type="text" id="builder-deck-category" class="form-input" placeholder="Categoria (ex: Biologia)">
+        </div>
+        <input type="text" id="builder-deck-desc" class="form-input" placeholder="Breve descrição dos conceitos abordados" style="margin-bottom: 20px;">
+
+        <!-- Lista Dinâmica de Pares -->
+        <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--text-muted);">
+          PARES DE CONCEITOS (MÍNIMO 6 PARES)
+        </h3>
+        <div id="builder-pairs-list">
+          <!-- Linhas de pares geradas via JS -->
+        </div>
+
+        <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: space-between;">
+          <button type="button" id="btn-add-pair" class="btn-action-tool">
+            <i class="fa-solid fa-plus"></i> Adicionar Mais um Par
+          </button>
+          <button type="button" id="btn-save-deck" class="btn-primary-large" style="padding: 12px 28px; font-size: 0.95rem;">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar Baralho
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ==================== TELA 4: LEADERBOARD & PÓDIO ==================== -->
+    <main id="screen-leaderboard" class="screen">
+      <div class="leaderboard-box">
+        <h2 class="section-title"><i class="fa-solid fa-ranking-star"></i> Pódio & Melhores Pontuações</h2>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
+          Classificação local dos estudantes com maior pontuação e combos contínuos.
+        </p>
+
+        <div id="leaderboard-list">
+          <!-- Linhas de pontuação geradas via JS -->
+        </div>
+      </div>
+    </main>
   </div>
 
-  <!-- Modal Dinâmico de Fim de Jogo (Vitória ou Game Over) -->
-  <div class="modal-overlay" id="game-modal" aria-hidden="true" role="dialog">
-    <div class="modal-content" id="modal-box">
-      <!-- Ícone Dinâmico (Troféu ou Caveira/Alerta) -->
-      <div class="modal-icon-wrapper" id="modal-icon-wrapper">
-        <i class="fa-solid fa-trophy" id="modal-icon"></i>
-      </div>
+  <!-- ==================== MODAL DE FIM DE JOGO ==================== -->
+  <div id="game-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div id="game-modal-box" class="modal-content win">
+      <div class="modal-icon-top"><i id="game-modal-icon" class="fa-solid fa-trophy"></i></div>
+      <h2 id="game-modal-title" class="modal-title">Missão Cumprida!</h2>
+      <p id="game-modal-subtitle" class="modal-subtitle">Você completou todos os pares educativos.</p>
 
-      <h2 class="modal-title" id="modal-title">Missão Cumprida!</h2>
-      <p class="modal-subtitle" id="modal-subtitle">Você compilou o código antes do prazo estourar.</p>
-
-      <!-- Grade de Estatísticas Finais -->
-      <div class="modal-stats-grid">
-        <div class="modal-stat-item">
-          <i class="fa-solid fa-stopwatch"></i>
-          <span class="label">Tempo Restante</span>
-          <span class="value" id="modal-final-time">0s</span>
+      <div class="modal-stats-3">
+        <div class="modal-stat-box">
+          <span>Score</span>
+          <strong id="modal-final-score">0 pts</strong>
         </div>
-        <div class="modal-stat-item">
-          <i class="fa-solid fa-arrow-pointer"></i>
-          <span class="label">Movimentos</span>
-          <span class="value" id="modal-final-moves">0</span>
+        <div class="modal-stat-box">
+          <span>Jogadas</span>
+          <strong id="modal-final-moves">0</strong>
         </div>
-        <div class="modal-stat-item">
-          <i class="fa-solid fa-bullseye"></i>
-          <span class="label">Pares Concluídos</span>
-          <span class="value" id="modal-final-pairs">0 / 8</span>
-        </div>
-        <div class="modal-stat-item highlight-stat">
-          <i class="fa-solid fa-trophy"></i>
-          <span class="label">Score Final</span>
-          <span class="value" id="modal-final-score">0 pts</span>
+        <div class="modal-stat-box">
+          <span>Maior Combo</span>
+          <strong id="modal-final-streak">1x</strong>
         </div>
       </div>
 
-      <!-- Botão de Ação -->
-      <button id="btn-modal-action" class="btn-action">
-        <i class="fa-solid fa-play"></i>
-        <span id="modal-btn-text">Jogar Novamente</span>
+      <div class="modal-actions">
+        <button id="btn-modal-lobby" class="btn-modal-secondary">Voltar ao Menu</button>
+        <button id="btn-modal-replay" class="btn-modal-primary">Jogar Novamente</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DE COMPARTILHAMENTO (URL & QR CODE) ==================== -->
+  <div id="share-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content">
+      <h2 class="modal-title">Compartilhar Baralho</h2>
+      <p class="modal-subtitle" id="share-deck-title">Envie para seus alunos via Link ou QR Code.</p>
+
+      <div style="display: flex; justify-content: center; margin: 16px 0;">
+        <canvas id="share-qr-canvas" style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);"></canvas>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+        <input type="text" id="share-url-input" class="form-input" readonly style="font-size: 0.78rem;">
+        <button id="btn-copy-share-url" class="btn-action-tool" title="Copiar Link">
+          <i class="fa-solid fa-copy"></i>
+        </button>
+      </div>
+
+      <button onclick="document.getElementById('share-modal').classList.remove('active')" class="btn-modal-secondary" style="width: 100%;">
+        Fechar
       </button>
     </div>
   </div>
 
-  <!-- Script da Lógica e Gamificação -->
-  <script src="script.js"></script>
+  <!-- ==================== MODAL DE SELEÇÃO DE AVATAR ==================== -->
+  <div id="avatar-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content">
+      <h2 class="modal-title">Escolha seu Avatar</h2>
+      <p class="modal-subtitle">Selecione o emoji que representa seu perfil.</p>
+
+      <div id="avatar-grid" class="avatar-grid">
+        <!-- Emojis injetados via JS -->
+      </div>
+
+      <button onclick="document.getElementById('avatar-modal').classList.remove('active')" class="btn-modal-secondary" style="width: 100%; margin-top: 20px;">
+        Fechar
+      </button>
+    </div>
+  </div>
+
+  <!-- Script Central da SPA -->
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
