@@ -56,6 +56,10 @@ class ThemeManager {
   }
 
   getCurrentTheme() {
+    return THEMES.find(t => t.id === this.currentTheme) || THEMES[0];
+  }
+
+  getCurrentThemeId() {
     return this.currentTheme;
   }
 }

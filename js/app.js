@@ -296,8 +296,8 @@ class MemoryMasterApp {
 
   openMobileDrawer() {
     this.mobileDrawerContainer?.classList.add('active');
-    const currentTheme = themeManager.getCurrentTheme?.() || { name: 'Dark Neon' };
-    this.updateDrawerThemeLabel(currentTheme.name);
+    const currentTheme = themeManager.getCurrentTheme();
+    this.updateDrawerThemeLabel(currentTheme ? currentTheme.name : 'Dark Neon');
     this.updateDrawerSoundLabel(soundFx.isMuted);
     soundFx.playClick();
   }
@@ -306,9 +306,10 @@ class MemoryMasterApp {
     this.mobileDrawerContainer?.classList.remove('active');
   }
 
-  updateDrawerThemeLabel(themeName) {
+  updateDrawerThemeLabel(themeInput) {
     if (this.drawerThemeName) {
-      this.drawerThemeName.textContent = `Tema: ${themeName}`;
+      const name = (typeof themeInput === 'object' && themeInput) ? themeInput.name : themeInput;
+      this.drawerThemeName.textContent = `Tema: ${name || 'Dark Neon'}`;
     }
   }
 

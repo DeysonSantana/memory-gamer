@@ -306,12 +306,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 14px;
   margin-bottom: 24px;
+  min-width: 0;
 }
 .user-profile-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.user-profile-left > div {
+  min-width: 0;
+  flex: 1;
 }
 .avatar-btn {
   font-size: 1.8rem;
@@ -325,9 +333,18 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: transform 0.2s;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 .avatar-btn:hover {
   transform: scale(1.08);
+}
+.avatar-btn .avatar-photo-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--accent-primary);
 }
 .nickname-input {
   background: transparent;
@@ -335,14 +352,52 @@ body {
   color: var(--text-main);
   font-size: 1.05rem;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 4px 6px;
   border-radius: 6px;
   outline: none;
+  width: 100%;
+  max-width: 240px;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
   transition: border-color 0.2s;
 }
 .nickname-input:focus {
   border-color: var(--border-glow);
   background: var(--bg-surface-elevated);
+}
+.nickname-input:disabled {
+  cursor: default;
+  opacity: 0.95;
+}
+
+/* Botão de Ação / Ferramenta (Compartilhar, Copiar, etc.) */
+.btn-action-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glow);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.btn-action-tool:hover {
+  background: rgba(0, 242, 254, 0.14);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 242, 254, 0.25);
+}
+.btn-action-tool i {
+  color: var(--accent-primary);
+  font-size: 0.95rem;
 }
 
 .section-title {
@@ -1303,6 +1358,28 @@ body {
   .nav-btn span {
     display: none;
   }
+  .user-profile-bar {
+    padding: 10px 12px;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .user-profile-left {
+    gap: 8px;
+  }
+  .avatar-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+  .nickname-input {
+    font-size: 0.92rem;
+    max-width: 150px;
+  }
+  .btn-action-tool {
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    gap: 6px;
+  }
   .game-hud {
     grid-template-columns: 1fr 1fr 1fr;
     padding: 8px 10px;
@@ -1342,6 +1419,12 @@ body {
 }
 
 @media (max-width: 360px) {
+  .nickname-input {
+    max-width: 105px;
+  }
+  .btn-action-tool {
+    padding: 8px 10px;
+  }
   .game-board.cards-16 {
     gap: 4px;
   }
