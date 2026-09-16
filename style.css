@@ -732,6 +732,9 @@ body {
 
 /* Carta Individual 3D */
 .card {
+  width: var(--card-size, 100%);
+  height: var(--card-size, auto);
+  max-width: 100%;
   aspect-ratio: 1 / 1;
   position: relative;
   cursor: pointer;
@@ -739,6 +742,7 @@ body {
   transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   user-select: none;
   min-width: 0;
+  margin: 0 auto;
 }
 .card:hover:not(.flipped):not(.matched) {
   transform: translateY(-3px) scale(1.02);
@@ -1329,5 +1333,505 @@ body {
   }
   .card-visual-emoji {
     font-size: 1.2rem;
+  }
+}
+
+/* ==========================================================================
+   NOVA SEÇÃO: GOOGLE AUTH, SALAS MULTIPLAYER (GRUPO) & FIREBASE SYNC
+   ========================================================================== */
+
+/* 1. Google Auth & Perfil na Navbar */
+.btn-google-auth {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  gap: 8px;
+}
+.btn-google-auth:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #4285F4;
+  box-shadow: 0 0 12px rgba(66, 133, 244, 0.35);
+}
+.btn-google-auth i {
+  color: #ea4335;
+}
+
+.google-profile-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glow);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.avatar-photo-img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--accent-primary);
+}
+.google-user-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+}
+
+/* 2. Banner de Salas Multiplayer no Lobby */
+.group-rooms-banner {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.08), rgba(114, 9, 183, 0.12));
+  border: 1px solid var(--border-glow);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.group-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.group-banner-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-primary), #7209b7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3);
+}
+.group-banner-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+.group-banner-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+.group-banner-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.btn-group-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.btn-create-room {
+  background: linear-gradient(135deg, var(--accent-primary), #00c6ff);
+  color: #040810;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 242, 254, 0.3);
+}
+.btn-create-room:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+}
+.btn-join-room {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glow);
+  color: var(--text-main);
+}
+.btn-join-room:hover {
+  background: rgba(0, 242, 254, 0.12);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+/* 3. Tela da Sala de Espera / Lobby Multiplayer (#screen-room-lobby) */
+.room-lobby-container {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.room-header-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.room-pin-section {
+  flex: 1;
+  min-width: 240px;
+}
+.room-pin-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 8px;
+}
+.room-pin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.room-pin-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: var(--accent-primary);
+  background: rgba(0, 242, 254, 0.08);
+  border: 2px dashed var(--accent-primary);
+  padding: 4px 16px;
+  border-radius: 10px;
+  text-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
+}
+.room-pin-help {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.room-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.room-qr-canvas {
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+.qr-caption {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.room-deck-banner {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glow);
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.room-players-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 20px;
+}
+.room-players-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.room-players-header h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.room-status-pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--accent-match);
+  background: rgba(0, 230, 118, 0.1);
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-match);
+  box-shadow: 0 0 8px var(--accent-match);
+  animation: pulseDot 1.4s infinite;
+}
+@keyframes pulseDot {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0.6; }
+}
+
+.room-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.room-player-chip {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.room-player-chip:hover {
+  border-color: var(--border-glow);
+  transform: translateY(-2px);
+}
+.room-player-chip.is-host {
+  border-color: rgba(255, 215, 0, 0.4);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), var(--bg-surface-elevated));
+}
+.player-chip-avatar {
+  font-size: 1.4rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.player-chip-info {
+  flex: 1;
+  min-width: 0;
+}
+.player-chip-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.host-pill {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+.btn-kick {
+  background: transparent;
+  border: none;
+  color: var(--accent-danger);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  font-size: 0.85rem;
+}
+.btn-kick:hover {
+  opacity: 1;
+}
+
+.room-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 4. Modais: PIN Input, Firebase & Pódio */
+.modal-pin-content {
+  max-width: 420px;
+  text-align: center;
+}
+.pin-input-wrapper {
+  margin: 20px 0;
+}
+.input-room-pin {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.4rem;
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 12px;
+  width: 100%;
+  max-width: 280px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--accent-primary);
+  background: var(--bg-surface-elevated);
+  color: var(--accent-primary);
+  outline: none;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
+  transition: all 0.2s ease;
+}
+.input-room-pin:focus {
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+  border-color: #00f2fe;
+}
+.modal-actions-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.modal-firebase-content {
+  max-width: 540px;
+}
+.firebase-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  text-align: left;
+}
+.form-help-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.modal-podium-content {
+  max-width: 500px;
+  text-align: center;
+}
+.group-podium-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+  max-height: 380px;
+  overflow-y: auto;
+}
+.podium-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  transition: transform 0.2s;
+}
+.podium-player-row.rank-1 {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), var(--bg-surface-elevated));
+  border-color: #ffd700;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+  transform: scale(1.02);
+}
+.podium-player-row.rank-2 {
+  border-color: #c0c0c0;
+}
+.podium-player-row.rank-3 {
+  border-color: #cd7f32;
+}
+.podium-player-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.podium-rank-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 900;
+  min-width: 28px;
+}
+.podium-score-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent-match);
+}
+
+/* 5. Otimizações Extremas de Responsividade (Zero Rolagem no Jogo) */
+@media (max-width: 680px) {
+  .group-rooms-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .group-banner-actions {
+    flex-direction: column;
+  }
+  .room-header-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .room-pin-row {
+    justify-content: center;
+  }
+  .room-footer-actions {
+    flex-direction: column;
+  }
+  .room-footer-actions button {
+    width: 100%;
+  }
+}
+
+/* Dispositivos Móveis em Modo Paisagem (Landscape) */
+@media (orientation: landscape) and (max-height: 540px) {
+  .navbar {
+    padding: 6px 12px;
+  }
+  .brand-title {
+    font-size: 1rem;
+  }
+  .game-header-bar {
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+  }
+  .game-hud {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+  }
+  .timer-bar-wrapper {
+    margin-bottom: 6px;
+  }
+  .curiosity-pill {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+  }
+  .game-board {
+    gap: 4px;
+  }
+  .card-face {
+    padding: 2px;
+  }
+  .card-visual-emoji {
+    font-size: 1.1rem;
+  }
+  .card-front .card-title {
+    font-size: 0.58rem;
   }
 }

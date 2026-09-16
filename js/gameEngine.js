@@ -23,6 +23,7 @@ export class GameEngine {
       onComboUpdate: () => {},
       onCuriosity: () => {},
       onGameOver: () => {},
+      onProgress: () => {},
       ...callbacks
     };
 
@@ -33,6 +34,8 @@ export class GameEngine {
     this.deck = null;
     this.mode = 'timed'; // 'timed' | 'combo' | 'zen'
     this.difficulty = 'medium'; // 'easy' (6), 'medium' (8), 'hard' (12)
+    this.seed = null;
+    this.randomGenerator = Math.random;
     
     this.cards = [];
     this.firstCard = null;
@@ -48,10 +51,18 @@ export class GameEngine {
     this.maxStreak = 0;
 
     this.timeLimit = 60;
-    this.timeSeconds = 60; // No modo timed é regressivo; no zen/combo é progressivo
+    this.timeSeconds = 60;
     this.timerInterval = null;
     this.isGameActive = false;
     this.isGameStarted = false;
+  }
+
+  createPrng(seed) {
+    let s = (seed >>> 0) || 123456;
+    return function() {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
   }
 
   /**
@@ -59,14 +70,17 @@ export class GameEngine {
    * @param {Object} deck - Baralho escolhido
    * @param {string} mode - 'timed' | 'combo' | 'zen'
    * @param {string} difficulty - 'easy' | 'medium' | 'hard'
+   * @param {number|null} seed - Semente para sincronizar embaralhamento em grupo
    */
-  start(deck, mode = 'timed', difficulty = 'medium') {
+  start(deck, mode = 'timed', difficulty = 'medium', seed = null) {
     this.stopTimer();
     this.resetState();
 
     this.deck = deck;
     this.mode = mode;
     this.difficulty = difficulty;
+    this.seed = seed;
+    this.randomGenerator = (seed !== null && seed !== undefined) ? this.createPrng(seed) : Math.random;
 
     // Define a quantidade de pares conforme a dificuldade
     const pairLimits = { easy: 6, medium: 8, hard: 12 };
@@ -88,6 +102,13 @@ export class GameEngine {
     this.callbacks.onMovesUpdate(this.moves);
     this.callbacks.onComboUpdate(this.streak);
     this.callbacks.onTimerUpdate(this.timeSeconds, this.mode, this.timeLimit);
+    this.callbacks.onProgress({
+      score: this.score,
+      moves: this.moves,
+      matchedPairs: this.matchedPairs,
+      totalPairs: this.totalPairs,
+      finished: false
+    });
 
     return this.cards;
   }
@@ -96,7 +117,7 @@ export class GameEngine {
    * Prepara os pares de cartas (A e B) e embaralha com Fisher-Yates
    */
   prepareDeckCards() {
-    // Seleciona os pares necessários aleatoriamente
+    // Seleciona os pares necessários aleatoriamente com o PRNG
     const shuffledSource = this.shuffle([...this.deck.pairs]);
     const selectedPairs = shuffledSource.slice(0, this.totalPairs);
 
@@ -134,12 +155,12 @@ export class GameEngine {
   }
 
   /**
-   * Algoritmo de Embaralhamento Fisher-Yates (Knuth) O(n)
+   * Algoritmo de Embaralhamento Fisher-Yates (Knuth) determinístico com PRNG
    */
   shuffle(array) {
     const arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(this.randomGenerator() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
@@ -223,6 +244,13 @@ export class GameEngine {
 
     this.callbacks.onScoreUpdate(this.score, pointsGained);
     this.callbacks.onComboUpdate(this.streak);
+    this.callbacks.onProgress({
+      score: this.score,
+      moves: this.moves,
+      matchedPairs: this.matchedPairs,
+      totalPairs: this.totalPairs,
+      finished: this.matchedPairs === this.totalPairs
+    });
 
     // Emite pílula formativa de curiosidade
     if (curiosityText) {
@@ -318,6 +346,14 @@ export class GameEngine {
 
     soundFx.playVictory();
 
+    this.callbacks.onProgress({
+      score: this.score,
+      moves: this.moves,
+      matchedPairs: this.matchedPairs,
+      totalPairs: this.totalPairs,
+      finished: true
+    });
+
     this.callbacks.onGameOver({
       isVictory: true,
       score: this.score,
@@ -334,6 +370,14 @@ export class GameEngine {
     this.isGameActive = false;
     this.lockBoard = true;
     soundFx.playGameOver();
+
+    this.callbacks.onProgress({
+      score: this.score,
+      moves: this.moves,
+      matchedPairs: this.matchedPairs,
+      totalPairs: this.totalPairs,
+      finished: true
+    });
 
     this.callbacks.onGameOver({
       isVictory: false,

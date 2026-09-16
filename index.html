@@ -46,6 +46,25 @@
           <i class="fa-solid fa-plane"></i> Offline
         </span>
 
+        <!-- Botão Google Login -->
+        <button id="btn-google-login" class="nav-btn btn-google-auth" title="Fazer Login com Google">
+          <i class="fa-brands fa-google"></i>
+          <span>Entrar com Google</span>
+        </button>
+
+        <!-- Área de Perfil Google Autenticado -->
+        <div id="google-profile-area" class="google-profile-area hidden">
+          <img id="google-user-photo" class="avatar-photo-img" src="" alt="Foto">
+          <span id="google-user-name" class="google-user-name"></span>
+          <button id="btn-google-logout" class="nav-btn icon-btn" title="Sair da Conta Google">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <button id="btn-firebase-settings" class="nav-btn icon-btn" title="Configurar Firebase (Nuvem / Multi-dispositivos)">
+          <i class="fa-solid fa-fire"></i>
+        </button>
+
         <button id="btn-install-pwa" class="nav-btn btn-pwa-install hidden" title="Instalar aplicativo">
           <i class="fa-solid fa-download"></i>
           <span>Instalar App</span>
@@ -134,6 +153,25 @@
               <span>Difícil (12)</span>
             </label>
           </div>
+        </div>
+      </section>
+
+      <!-- Seção Multiplayer: Salas de Grupo / Aula -->
+      <section class="group-rooms-banner">
+        <div class="group-banner-info">
+          <div class="group-banner-icon"><i class="fa-solid fa-users-rays"></i></div>
+          <div class="group-banner-text">
+            <h3 class="group-banner-title">Jogar em Grupo / Sala de Aula</h3>
+            <p class="group-banner-desc">Crie uma sala sincronizada ou entre com o PIN para competir ao vivo com o mesmo tabuleiro!</p>
+          </div>
+        </div>
+        <div class="group-banner-actions">
+          <button type="button" id="btn-create-room" class="btn-group-action btn-create-room" title="Criar Sala como Anfitrião (Host)">
+            <i class="fa-solid fa-plus-circle"></i> Criar Sala
+          </button>
+          <button type="button" id="btn-join-room-prompt" class="btn-group-action btn-join-room" title="Entrar em uma Sala com PIN de 6 Dígitos">
+            <i class="fa-solid fa-right-to-bracket"></i> Entrar com PIN
+          </button>
         </div>
       </section>
 
@@ -285,6 +323,59 @@
         </div>
       </div>
     </main>
+
+    <!-- ==================== TELA 5: SALA MULTIPLAYER (LOBBY DA SALA) ==================== -->
+    <main id="screen-room-lobby" class="screen">
+      <div class="room-lobby-container">
+        <!-- Cabeçalho do PIN e QR Code -->
+        <div class="room-header-card">
+          <div class="room-pin-section">
+            <span class="room-pin-label"><i class="fa-solid fa-hashtag"></i> CÓDIGO DA SALA (PIN)</span>
+            <div class="room-pin-row">
+              <span id="room-pin-display" class="room-pin-badge">------</span>
+              <button type="button" id="btn-copy-room-pin" class="btn-action-tool" title="Copiar Link com PIN">
+                <i class="fa-solid fa-copy"></i> Copiar PIN
+              </button>
+            </div>
+            <p class="room-pin-help">
+              Envie o PIN ou aponte a câmera para o QR Code ao lado para entrar na sala.
+            </p>
+          </div>
+
+          <div class="room-qr-section">
+            <canvas id="room-qr-canvas" class="room-qr-canvas" width="130" height="130"></canvas>
+            <span class="qr-caption"><i class="fa-solid fa-qrcode"></i> Escanear para Entrar</span>
+          </div>
+        </div>
+
+        <!-- Banner com Baralho Selecionado -->
+        <div class="room-deck-banner">
+          <i class="fa-solid fa-layer-group" style="color: var(--accent-primary);"></i>
+          <span>Baralho da Sala: <strong id="room-deck-display">Carregando...</strong></span>
+        </div>
+
+        <!-- Lista de Participantes Conectados em Tempo Real -->
+        <div class="room-players-card">
+          <div class="room-players-header">
+            <h3><i class="fa-solid fa-users"></i> Jogadores Conectados (<span id="room-players-count">0</span>)</h3>
+            <span class="room-status-pulse"><span class="pulse-dot"></span> Sincronizado ao Vivo</span>
+          </div>
+          <div id="room-players-list" class="room-players-grid">
+            <!-- Chips de jogadores gerados dinamicamente via JS -->
+          </div>
+        </div>
+
+        <!-- Rodapé de Ações -->
+        <div class="room-footer-actions">
+          <button type="button" id="btn-leave-room" class="btn-modal-secondary">
+            <i class="fa-solid fa-arrow-left"></i> Sair da Sala
+          </button>
+          <button type="button" id="btn-start-room-game" class="btn-primary-large">
+            <i class="fa-solid fa-play"></i> Iniciar Partida em Grupo
+          </button>
+        </div>
+      </div>
+    </main>
   </div>
 
   <!-- ==================== MODAL DE FIM DE JOGO ==================== -->
@@ -408,6 +499,87 @@
 
       <button onclick="document.getElementById('modes-modal').classList.remove('active')" class="btn-modal-primary" style="width: 100%; margin-top: 18px;">
         Entendi, Vamos Jogar!
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL ENTRAR COM PIN (SALA) ==================== -->
+  <div id="join-room-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content modal-pin-content">
+      <div class="modal-icon-top" style="color: var(--accent-primary);"><i class="fa-solid fa-key"></i></div>
+      <h2 class="modal-title">Entrar em uma Sala</h2>
+      <p class="modal-subtitle">Digite o PIN de 6 dígitos fornecido pelo organizador:</p>
+
+      <div class="pin-input-wrapper">
+        <input type="text" id="input-room-pin" class="input-room-pin" placeholder="000000" maxlength="6" autocomplete="off">
+      </div>
+
+      <div class="modal-actions-row">
+        <button type="button" id="btn-close-join-modal" class="btn-modal-secondary">Cancelar</button>
+        <button type="button" id="btn-confirm-join-pin" class="btn-modal-primary">Entrar na Sala</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL CONFIGURAÇÃO FIREBASE ==================== -->
+  <div id="firebase-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content modal-firebase-content">
+      <div class="modal-icon-top" style="color: #f5820d;"><i class="fa-solid fa-fire"></i></div>
+      <h2 class="modal-title">Configurar Firebase</h2>
+      <p class="modal-subtitle">
+        Conexão opcional para nuvem global. Sem as chaves, o modo multi-abas/dispositivos locais funciona via BroadcastChannel automaticamente!
+      </p>
+
+      <form id="firebase-config-form" class="firebase-form" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label for="cfg-api-key">API Key</label>
+          <input type="text" id="cfg-api-key" class="form-input" placeholder="AIzaSy...">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-auth-domain">Auth Domain</label>
+            <input type="text" id="cfg-auth-domain" class="form-input" placeholder="seu-projeto.firebaseapp.com">
+          </div>
+          <div class="form-group">
+            <label for="cfg-project-id">Project ID</label>
+            <input type="text" id="cfg-project-id" class="form-input" placeholder="seu-projeto">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cfg-storage-bucket">Storage Bucket</label>
+            <input type="text" id="cfg-storage-bucket" class="form-input" placeholder="seu-projeto.appspot.com">
+          </div>
+          <div class="form-group">
+            <label for="cfg-app-id">App ID</label>
+            <input type="text" id="cfg-app-id" class="form-input" placeholder="1:123456789:web:abcdef">
+          </div>
+        </div>
+        <p class="form-help-text">
+          <i class="fa-solid fa-circle-info"></i> Os dados ficam salvos de forma segura no seu navegador (localStorage).
+        </p>
+
+        <div class="modal-actions-row">
+          <button type="button" id="btn-close-firebase-modal" class="btn-modal-secondary">Fechar</button>
+          <button type="button" id="btn-save-firebase-cfg" class="btn-modal-primary">Salvar e Conectar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL PÓDIO DA SALA MULTIPLAYER ==================== -->
+  <div id="group-podium-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content modal-podium-content">
+      <div class="modal-icon-top" style="color: #ffd700;"><i class="fa-solid fa-trophy"></i></div>
+      <h2 class="modal-title">Classificação da Sala</h2>
+      <p class="modal-subtitle">Resultado final de todos os competidores da rodada!</p>
+
+      <div id="group-podium-list" class="group-podium-list">
+        <!-- Renderizado dinamicamente via JS -->
+      </div>
+
+      <button type="button" id="btn-podium-close" class="btn-modal-primary" style="width: 100%; margin-top: 18px;">
+        Voltar ao Lobby
       </button>
     </div>
   </div>

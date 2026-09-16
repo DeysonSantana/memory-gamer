@@ -5,7 +5,7 @@
  * Estratégia: Cache-First com Fallback de Rede para funcionamento 100% offline.
  */
 
-const CACHE_NAME = 'memorymaster-v1.1.0';
+const CACHE_NAME = 'memorymaster-v1.2.0';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -24,7 +24,10 @@ const STATIC_ASSETS = [
   './js/qrcodeEngine.js',
   './js/gameEngine.js',
   './js/leaderboardManager.js',
-  './js/offlineManager.js'
+  './js/offlineManager.js',
+  './js/firebaseConfig.js',
+  './js/authManager.js',
+  './js/roomManager.js'
 ];
 
 // Instalação: Cacheia todos os arquivos estáticos essenciais

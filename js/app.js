@@ -3,11 +3,10 @@
  * MEMORYMASTER - ORQUESTRADOR CENTRAL DA SPA (SPA APP CONTROLLER)
  * ==============================================================================
  * Gerencia o ciclo de vida da aplicação:
- * - Troca de telas (Lobby, Jogo, Construtor de Baralhos, Leaderboard)
- * - Identidade do Jogador (Nickname e Avatar Emoji)
- * - Inicialização do GameEngine, Áudio, Temas e PWA
- * - Compartilhamento por URL e QR Code nativo
- * - Importação e Exportação de Baralhos (JSON e CSV)
+ * - Troca de telas (Lobby, Jogo, Construtor, Leaderboard, Sala Multiplayer)
+ * - Autenticação com Google via Firebase & Modo Convidado
+ * - Salas Multiplayer ao Vivo (Lobby síncrono com PIN e Pódio coletivo)
+ * - Sincronização e cálculo de responsividade extrema
  */
 
 import { themeManager, THEMES } from './themeManager.js';
@@ -19,6 +18,9 @@ import { CsvParser } from './csvParser.js';
 import { ShareManager } from './shareManager.js';
 import { QrCodeEngine } from './qrcodeEngine.js';
 import { offlineManager } from './offlineManager.js';
+import { authManager } from './authManager.js';
+import { roomManager } from './roomManager.js';
+import { saveFirebaseConfig, getSavedFirebaseConfig, isFirebaseConfigured } from './firebaseConfig.js';
 
 class MemoryMasterApp {
   constructor() {
@@ -29,6 +31,7 @@ class MemoryMasterApp {
 
     this.nickname = localStorage.getItem('memorymaster_nickname') || 'Estudante';
     this.avatarEmoji = localStorage.getItem('memorymaster_avatar') || '🎓';
+    this.activeRoom = null;
 
     this.gameEngine = new GameEngine({
       onScoreUpdate: (score, delta) => this.handleScoreUpdate(score, delta),
@@ -36,7 +39,8 @@ class MemoryMasterApp {
       onMovesUpdate: (moves) => this.handleMovesUpdate(moves),
       onComboUpdate: (combo) => this.handleComboUpdate(combo),
       onCuriosity: (text) => this.showCuriosityPill(text),
-      onGameOver: (result) => this.handleGameOver(result)
+      onGameOver: (result) => this.handleGameOver(result),
+      onProgress: (stats) => this.handleGameProgress(stats)
     });
   }
 
@@ -45,18 +49,21 @@ class MemoryMasterApp {
     themeManager.init();
     offlineManager.init('btn-install-pwa', 'offline-badge');
 
-    // 2. Elementos de Interface
+    // 2. Cache de elementos do DOM
     this.cacheDomElements();
-    this.setupEventListeners();
 
-    // 3. Atualiza perfil
-    this.updateProfileUI();
+    // 3. Ouvintes de eventos e autenticação
+    this.setupEventListeners();
+    this.setupAuthListeners();
 
     // 4. Renderiza lista de baralhos no lobby
     this.renderDeckSelector();
 
-    // 5. Checa se o usuário abriu um link com baralho compartilhado (#share=...)
-    this.checkSharedUrlPayload();
+    // 5. Ajuste inicial de responsividade fluida
+    this.setupResponsiveLayout();
+
+    // 6. Verifica URLs compartilhadas (#share=... ou #room=...)
+    this.checkUrlPayloads();
   }
 
   cacheDomElements() {
@@ -65,7 +72,8 @@ class MemoryMasterApp {
       lobby: document.getElementById('screen-lobby'),
       game: document.getElementById('screen-game'),
       builder: document.getElementById('screen-builder'),
-      leaderboard: document.getElementById('screen-leaderboard')
+      leaderboard: document.getElementById('screen-leaderboard'),
+      roomLobby: document.getElementById('screen-room-lobby')
     };
 
     // HUD do Jogo
@@ -86,6 +94,9 @@ class MemoryMasterApp {
     this.shareModal = document.getElementById('share-modal');
     this.avatarModal = document.getElementById('avatar-modal');
     this.modesModal = document.getElementById('modes-modal');
+    this.firebaseModal = document.getElementById('firebase-modal');
+    this.joinRoomModal = document.getElementById('join-room-modal');
+    this.groupPodiumModal = document.getElementById('group-podium-modal');
   }
 
   setupEventListeners() {
@@ -115,40 +126,163 @@ class MemoryMasterApp {
       this.openModal(this.modesModal);
     });
 
-    // Botão Iniciar Jogo no Lobby
-    document.getElementById('btn-start-game')?.addEventListener('click', () => this.startGame());
+    // Botão Iniciar Jogo Solo no Lobby
+    document.getElementById('btn-start-game')?.addEventListener('click', () => this.startSoloGame());
+
+    // Botões de Sala Multiplayer
+    document.getElementById('btn-create-room')?.addEventListener('click', () => this.createGroupRoom());
+    document.getElementById('btn-join-room-prompt')?.addEventListener('click', () => {
+      this.openModal(this.joinRoomModal);
+    });
+    document.getElementById('btn-confirm-join-pin')?.addEventListener('click', () => this.confirmJoinByPin());
+
+    // Controles da Sala de Espera
+    document.getElementById('btn-start-room-game')?.addEventListener('click', () => this.startRoomGameAction());
+    document.getElementById('btn-leave-room')?.addEventListener('click', () => this.leaveCurrentRoom());
+    document.getElementById('btn-copy-room-pin')?.addEventListener('click', () => this.copyRoomPinAction());
 
     // Controles no HUD do Jogo
-    document.getElementById('btn-restart-game')?.addEventListener('click', () => this.startGame());
-    document.getElementById('btn-exit-game')?.addEventListener('click', () => this.navigateTo('lobby'));
+    document.getElementById('btn-restart-game')?.addEventListener('click', () => {
+      if (this.activeRoom) {
+        alert('Em partidas multiplayer em grupo, use "Sair" para voltar ao menu.');
+      } else {
+        this.startSoloGame();
+      }
+    });
+    document.getElementById('btn-exit-game')?.addEventListener('click', () => {
+      if (this.activeRoom) {
+        this.leaveCurrentRoom();
+      }
+      this.navigateTo('lobby');
+    });
 
-    // Botões dos Modais
+    // Botões dos Modais de Fim de Jogo
     document.getElementById('btn-modal-replay')?.addEventListener('click', () => {
       this.closeModal(this.gameModal);
-      this.startGame();
+      this.startSoloGame();
     });
     document.getElementById('btn-modal-lobby')?.addEventListener('click', () => {
       this.closeModal(this.gameModal);
       this.navigateTo('lobby');
     });
+    document.getElementById('btn-podium-close')?.addEventListener('click', () => {
+      this.closeModal(this.groupPodiumModal);
+      this.leaveCurrentRoom();
+      this.navigateTo('lobby');
+    });
 
-    // Avatar e Nickname
+    // Avatar e Nickname Convidado
     document.getElementById('user-avatar-btn')?.addEventListener('click', () => {
       this.openModal(this.avatarModal);
     });
     document.getElementById('user-nickname')?.addEventListener('change', (e) => {
-      this.nickname = e.target.value.trim() || 'Estudante';
-      localStorage.setItem('memorymaster_nickname', this.nickname);
+      const val = e.target.value.trim() || 'Estudante';
+      this.nickname = val;
+      authManager.updateGuestProfile(val, this.avatarEmoji);
+    });
+
+    // Firebase Config Modal
+    document.getElementById('btn-firebase-settings')?.addEventListener('click', () => {
+      this.openFirebaseConfigModal();
+    });
+    document.getElementById('btn-save-firebase-cfg')?.addEventListener('click', () => {
+      this.saveFirebaseConfigAction();
     });
 
     this.setupAvatarGrid();
     this.setupBuilderEvents();
   }
 
-  /**
-   * Alterna a exibição entre as telas da SPA
-   * @param {string} screenId 
-   */
+  // --- AUTENTICAÇÃO GOOGLE & GUEST ---
+  setupAuthListeners() {
+    const btnGoogleLogin = document.getElementById('btn-google-login');
+    const btnGoogleLogout = document.getElementById('btn-google-logout');
+
+    btnGoogleLogin?.addEventListener('click', async () => {
+      try {
+        this.showToast('Conectando com o Google...');
+        await authManager.signInWithGoogle();
+        this.showToast('Login com Google realizado com sucesso!');
+      } catch (err) {
+        if (!isFirebaseConfigured()) {
+          this.openFirebaseConfigModal();
+        } else {
+          alert('Erro ao autenticar com Google: ' + err.message);
+        }
+      }
+    });
+
+    btnGoogleLogout?.addEventListener('click', async () => {
+      await authManager.logout();
+      this.showToast('Você saiu da sua conta Google.');
+    });
+
+    authManager.onUserChanged((user) => {
+      this.updateAuthUI(user);
+    });
+  }
+
+  updateAuthUI(user) {
+    const avatarEl = document.getElementById('user-avatar-display');
+    const nickInput = document.getElementById('user-nickname');
+    const googleLoginBtn = document.getElementById('btn-google-login');
+    const googleProfileArea = document.getElementById('google-profile-area');
+    const googleUserPhoto = document.getElementById('google-user-photo');
+    const googleUserName = document.getElementById('google-user-name');
+
+    if (user.isGuest) {
+      if (avatarEl) avatarEl.textContent = user.avatarEmoji || '🎓';
+      if (nickInput) {
+        nickInput.value = user.displayName;
+        nickInput.removeAttribute('disabled');
+      }
+      googleLoginBtn?.classList.remove('hidden');
+      googleProfileArea?.classList.add('hidden');
+    } else {
+      if (avatarEl) {
+        avatarEl.innerHTML = user.photoURL
+          ? `<img src="${user.photoURL}" alt="User" class="avatar-photo-img">`
+          : '⭐';
+      }
+      if (nickInput) {
+        nickInput.value = user.displayName;
+        nickInput.setAttribute('disabled', 'true');
+      }
+      googleLoginBtn?.classList.add('hidden');
+      googleProfileArea?.classList.remove('hidden');
+      if (googleUserName) googleUserName.textContent = user.displayName;
+      if (googleUserPhoto && user.photoURL) googleUserPhoto.src = user.photoURL;
+    }
+  }
+
+  openFirebaseConfigModal() {
+    const cfg = getSavedFirebaseConfig() || {};
+    document.getElementById('cfg-api-key').value = cfg.apiKey || '';
+    document.getElementById('cfg-auth-domain').value = cfg.authDomain || '';
+    document.getElementById('cfg-project-id').value = cfg.projectId || '';
+    document.getElementById('cfg-storage-bucket').value = cfg.storageBucket || '';
+    document.getElementById('cfg-app-id').value = cfg.appId || '';
+    this.openModal(this.firebaseModal);
+  }
+
+  saveFirebaseConfigAction() {
+    const apiKey = document.getElementById('cfg-api-key').value.trim();
+    const authDomain = document.getElementById('cfg-auth-domain').value.trim();
+    const projectId = document.getElementById('cfg-project-id').value.trim();
+    const storageBucket = document.getElementById('cfg-storage-bucket').value.trim();
+    const appId = document.getElementById('cfg-app-id').value.trim();
+
+    if (!apiKey || !projectId) {
+      saveFirebaseConfig(null);
+      this.showToast('Configuração limpa. Modo Local/Offline ativo.');
+    } else {
+      saveFirebaseConfig({ apiKey, authDomain, projectId, storageBucket, appId });
+      this.showToast('Credenciais salvas com sucesso!');
+    }
+    this.closeModal(this.firebaseModal);
+  }
+
+  // --- NAVEGAÇÃO E RESPONSIVIDADE EXTREMA ---
   navigateTo(screenId) {
     this.currentScreen = screenId;
     Object.keys(this.screens).forEach(key => {
@@ -161,17 +295,46 @@ class MemoryMasterApp {
 
     if (screenId === 'lobby') {
       this.renderDeckSelector();
+    } else if (screenId === 'game') {
+      this.calculateOptimalBoardDimensions();
     }
   }
 
-  // --- CONTROLES DE IDENTIDADE DO USUÁRIO ---
-  updateProfileUI() {
-    const avatarEl = document.getElementById('user-avatar-display');
-    const nickInput = document.getElementById('user-nickname');
-    if (avatarEl) avatarEl.textContent = this.avatarEmoji;
-    if (nickInput) nickInput.value = this.nickname;
+  setupResponsiveLayout() {
+    const handleResize = () => {
+      if (this.currentScreen === 'game') {
+        this.calculateOptimalBoardDimensions();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', () => setTimeout(handleResize, 150));
   }
 
+  calculateOptimalBoardDimensions() {
+    if (!this.gameBoard) return;
+    const cardsCount = this.gameBoard.children.length;
+    if (!cardsCount) return;
+
+    // Calcula altura disponível excluindo navbar, header e HUD
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const isMobile = vw < 600;
+
+    // Em mobile, mantemos 4 colunas para 12 e 16 cartas e 4 colunas para 24 cartas
+    let cols = cardsCount === 24 ? (isMobile ? 4 : 6) : 4;
+    let rows = Math.ceil(cardsCount / cols);
+
+    const availableHeight = Math.max(300, vh - (isMobile ? 180 : 220));
+    const availableWidth = Math.min(880, vw - 24);
+
+    const maxCardByH = Math.floor((availableHeight - (rows * 8)) / rows);
+    const maxCardByW = Math.floor((availableWidth - (cols * 8)) / cols);
+    const optimalSize = Math.min(maxCardByH, maxCardByW, isMobile ? 85 : 120);
+
+    this.gameBoard.style.setProperty('--card-size', `${Math.max(54, optimalSize)}px`);
+  }
+
+  // --- CONTROLES DE AVATAR CONVIDADO ---
   setupAvatarGrid() {
     const emojis = ['🎓', '🔬', '🚀', '💡', '🦁', '⚡', '🎨', '🧠', '🏆', '🌟', '💻', '🌍', '📐', '⚗️', '📚', '🎯'];
     const grid = document.getElementById('avatar-grid');
@@ -184,8 +347,7 @@ class MemoryMasterApp {
       btn.textContent = emoji;
       btn.addEventListener('click', () => {
         this.avatarEmoji = emoji;
-        localStorage.setItem('memorymaster_avatar', emoji);
-        this.updateProfileUI();
+        authManager.updateGuestProfile(this.nickname, emoji);
         this.closeModal(this.avatarModal);
       });
       grid.appendChild(btn);
@@ -234,13 +396,192 @@ class MemoryMasterApp {
     }
   }
 
-  // --- FLUXO DO JOGO ---
-  startGame() {
+  // --- SALAS MULTIPLAYER EM GRUPO ---
+  async createGroupRoom() {
+    const user = authManager.getUser();
     if (!this.selectedDeck) {
       this.selectedDeck = deckManager.getAllDecks()[0];
     }
 
-    // Lê os filtros do lobby
+    const modeInput = document.querySelector('input[name="game-mode"]:checked');
+    const diffInput = document.querySelector('input[name="difficulty"]:checked');
+    const mode = modeInput ? modeInput.value : 'timed';
+    const difficulty = diffInput ? diffInput.value : 'medium';
+
+    try {
+      this.showToast('Criando sala ao vivo...');
+      const room = await roomManager.createRoom(user, this.selectedDeck, difficulty, mode);
+      this.openRoomLobby(room);
+    } catch (err) {
+      alert('Erro ao criar sala: ' + err.message);
+    }
+  }
+
+  async confirmJoinByPin() {
+    const pinInput = document.getElementById('input-room-pin');
+    const pin = pinInput?.value?.trim();
+    if (!pin || pin.length < 5) {
+      alert('Digite um PIN válido de 6 dígitos.');
+      return;
+    }
+
+    try {
+      this.showToast('Entrando na sala...');
+      const user = authManager.getUser();
+      const room = await roomManager.joinRoom(pin, user);
+      this.closeModal(this.joinRoomModal);
+      this.openRoomLobby(room);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  openRoomLobby(room) {
+    this.activeRoom = room;
+    this.navigateTo('roomLobby');
+
+    // Atualiza PIN e Link
+    const pinBadge = document.getElementById('room-pin-display');
+    const deckBadge = document.getElementById('room-deck-display');
+    if (pinBadge) pinBadge.textContent = room.pin;
+    if (deckBadge) deckBadge.textContent = `${room.deckTitle} (${room.difficulty.toUpperCase()})`;
+
+    // Gera QR Code para os alunos escanearem
+    const joinUrl = `${window.location.origin}${window.location.pathname}#room=${room.pin}`;
+    const qrCanvas = document.getElementById('room-qr-canvas');
+    if (qrCanvas) {
+      QrCodeEngine.render(qrCanvas, joinUrl, 160);
+    }
+
+    // Ouve atualizações em tempo real da sala
+    roomManager.onRoomUpdated((updatedRoom) => {
+      this.handleRoomUpdate(updatedRoom);
+    });
+  }
+
+  handleRoomUpdate(room) {
+    this.activeRoom = room;
+
+    // Atualiza lista de participantes no lobby
+    const playerList = document.getElementById('room-players-list');
+    const playersCount = document.getElementById('room-players-count');
+    const btnStart = document.getElementById('btn-start-room-game');
+    const waitingText = document.getElementById('room-waiting-text');
+
+    if (playersCount) playersCount.textContent = `${room.players.length} participante(s)`;
+
+    if (playerList) {
+      playerList.innerHTML = '';
+      room.players.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'room-player-chip';
+        item.innerHTML = `
+          <span class="player-chip-avatar">${p.avatarEmoji || '🎓'}</span>
+          <span class="player-chip-name">${p.displayName}</span>
+          ${p.isHost ? '<span class="host-pill">HOST</span>' : ''}
+          ${roomManager.isHost && !p.isHost ? `<button class="btn-kick" title="Remover jogador" data-uid="${p.uid}"><i class="fa-solid fa-xmark"></i></button>` : ''}
+        `;
+
+        if (roomManager.isHost && !p.isHost) {
+          item.querySelector('.btn-kick')?.addEventListener('click', () => {
+            roomManager.kickPlayer(room.pin, p.uid);
+          });
+        }
+
+        playerList.appendChild(item);
+      });
+    }
+
+    // Visibilidade dos botões do Host
+    if (roomManager.isHost) {
+      btnStart?.classList.remove('hidden');
+      waitingText?.classList.add('hidden');
+    } else {
+      btnStart?.classList.add('hidden');
+      waitingText?.classList.remove('hidden');
+    }
+
+    // Se o Host iniciou o jogo, todos entram na partida sincronizada
+    if (room.status === 'active' && this.currentScreen !== 'game') {
+      this.startSynchronizedMatch(room);
+    }
+
+    // Se a partida foi finalizada por todos, exibe o Pódio Coletivo
+    if (room.status === 'finished') {
+      this.showGroupPodium(room);
+    }
+  }
+
+  async startRoomGameAction() {
+    if (!this.activeRoom) return;
+    this.showToast('Iniciando partida para todos os jogadores...');
+    await roomManager.startRoomGame(this.activeRoom.pin);
+  }
+
+  startSynchronizedMatch(room) {
+    this.gameDeckTitle.textContent = `${room.deckTitle} [SALA ${room.pin}]`;
+    const cards = this.gameEngine.start(room.deckData, room.mode, room.difficulty, room.seed);
+    this.renderGameBoard(cards);
+    this.navigateTo('game');
+  }
+
+  handleGameProgress(stats) {
+    if (this.activeRoom) {
+      const user = authManager.getUser();
+      roomManager.updatePlayerScore(this.activeRoom.pin, user.uid, stats);
+    }
+  }
+
+  showGroupPodium(room) {
+    const list = document.getElementById('group-podium-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    // Ordena decrescente por pontuação
+    const sorted = [...room.players].sort((a, b) => b.score - a.score);
+
+    sorted.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.className = `leaderboard-row ${idx < 3 ? `podium-${idx + 1}` : ''}`;
+      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+
+      row.innerHTML = `
+        <div class="rank-col">${medal}</div>
+        <div class="player-col">
+          <span class="player-avatar">${p.avatarEmoji || '🎓'}</span>
+          <div class="player-details">
+            <span class="player-name">${p.displayName}</span>
+            <span class="player-deck">${p.moves} jogadas</span>
+          </div>
+        </div>
+        <div class="score-col"><strong>${p.score}</strong> pts</div>
+      `;
+      list.appendChild(row);
+    });
+
+    this.openModal(this.groupPodiumModal);
+  }
+
+  copyRoomPinAction() {
+    if (!this.activeRoom) return;
+    const url = `${window.location.origin}${window.location.pathname}#room=${this.activeRoom.pin}`;
+    navigator.clipboard.writeText(url);
+    this.showToast('Link da sala copiado! Envie aos seus alunos.');
+  }
+
+  leaveCurrentRoom() {
+    roomManager.leaveCurrentRoom();
+    this.activeRoom = null;
+    this.navigateTo('lobby');
+  }
+
+  // --- JOGO SOLO ---
+  startSoloGame() {
+    this.activeRoom = null;
+    if (!this.selectedDeck) {
+      this.selectedDeck = deckManager.getAllDecks()[0];
+    }
+
     const modeInput = document.querySelector('input[name="game-mode"]:checked');
     this.selectedMode = modeInput ? modeInput.value : 'timed';
 
@@ -249,17 +590,13 @@ class MemoryMasterApp {
 
     this.gameDeckTitle.textContent = this.selectedDeck.title;
 
-    // Inicia o motor do jogo
     const cards = this.gameEngine.start(this.selectedDeck, this.selectedMode, this.selectedDifficulty);
     this.renderGameBoard(cards);
-
     this.navigateTo('game');
   }
 
   renderGameBoard(cards) {
     this.gameBoard.innerHTML = '';
-
-    // Configura classe de grid dinâmico conforme total de cartas (12, 16 ou 24)
     this.gameBoard.className = `game-board cards-${cards.length}`;
 
     cards.forEach((cardData) => {
@@ -297,6 +634,8 @@ class MemoryMasterApp {
 
       this.gameBoard.appendChild(cardEl);
     });
+
+    this.calculateOptimalBoardDimensions();
   }
 
   // --- FEEDBACK DO HUD ---
@@ -326,7 +665,6 @@ class MemoryMasterApp {
         this.hudTimerBar.classList.remove('danger');
       }
     } else {
-      // Modo Combo ou Zen: Formatação MM:SS
       const m = String(Math.floor(seconds / 60)).padStart(2, '0');
       const s = String(seconds % 60).padStart(2, '0');
       this.hudTimer.textContent = `${m}:${s}`;
@@ -369,16 +707,18 @@ class MemoryMasterApp {
     document.getElementById('modal-final-moves').textContent = result.moves;
     document.getElementById('modal-final-streak').textContent = `${result.maxStreak}x`;
 
+    const user = authManager.getUser();
+
     if (result.isVictory) {
       modalBox.className = 'modal-content win';
       modalIcon.className = 'fa-solid fa-trophy';
       modalTitle.textContent = 'Missão Cumprida!';
       modalSubtitle.textContent = `Você dominou os conceitos de ${result.deck.title}!`;
 
-      // Salva no Ranking Local
+      // Salva no Ranking Local Solo
       leaderboardManager.addScore({
-        nickname: this.nickname,
-        avatarEmoji: this.avatarEmoji,
+        nickname: user.displayName,
+        avatarEmoji: user.avatarEmoji || '🎓',
         deckId: result.deck.id,
         deckTitle: result.deck.title,
         mode: result.mode,
@@ -395,7 +735,12 @@ class MemoryMasterApp {
     }
 
     setTimeout(() => {
-      this.openModal(this.gameModal);
+      if (this.activeRoom) {
+        // Se estiver em sala multiplayer, exibe o pódio da sala
+        this.showGroupPodium(this.activeRoom);
+      } else {
+        this.openModal(this.gameModal);
+      }
     }, 500);
   }
 
@@ -406,7 +751,6 @@ class MemoryMasterApp {
   }
 
   setupBuilderEvents() {
-    const pairList = document.getElementById('builder-pairs-list');
     const btnAddPair = document.getElementById('btn-add-pair');
     const btnSaveDeck = document.getElementById('btn-save-deck');
     const btnExportCsv = document.getElementById('btn-export-csv');
@@ -482,7 +826,6 @@ class MemoryMasterApp {
     if (!list) return;
 
     list.innerHTML = '';
-    // Inicializa com 6 linhas vazias se não houver
     for (let i = 0; i < 6; i++) {
       this.addBuilderPairRow();
     }
@@ -592,8 +935,27 @@ class MemoryMasterApp {
     this.openModal(this.shareModal);
   }
 
-  // --- CHECK URL SHARE PAYLOAD ---
-  checkSharedUrlPayload() {
+  // --- CHECK URL PAYLOADS (#share=... ou #room=...) ---
+  checkUrlPayloads() {
+    const hash = window.location.hash;
+
+    // 1. Checa se é entrada em sala (#room=123456)
+    if (hash && hash.startsWith('#room=')) {
+      const pin = hash.replace('#room=', '').trim();
+      setTimeout(async () => {
+        try {
+          const user = authManager.getUser();
+          const room = await roomManager.joinRoom(pin, user);
+          this.openRoomLobby(room);
+          this.showToast(`Entrou na sala ${pin}!`);
+        } catch (err) {
+          alert('Erro ao entrar na sala do link: ' + err.message);
+        }
+      }, 300);
+      return;
+    }
+
+    // 2. Checa se é baralho compartilhado (#share=...)
     const sharedDeck = ShareManager.parseUrlPayload();
     if (sharedDeck) {
       const confirmed = confirm(
@@ -604,13 +966,13 @@ class MemoryMasterApp {
         const saved = deckManager.saveDeck(sharedDeck);
         this.selectedDeck = saved;
         this.renderDeckSelector();
-        this.startGame();
+        this.startSoloGame();
       }
       ShareManager.clearUrlPayload();
     }
   }
 
-  // --- LEADERBOARD ---
+  // --- LEADERBOARD LOCAL ---
   openLeaderboard() {
     this.navigateTo('leaderboard');
     this.renderLeaderboardTable();
@@ -636,7 +998,6 @@ class MemoryMasterApp {
     scores.forEach((entry, idx) => {
       const item = document.createElement('div');
       item.className = `leaderboard-row ${idx < 3 ? `podium-${idx + 1}` : ''}`;
-
       const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
 
       item.innerHTML = `
@@ -679,7 +1040,7 @@ class MemoryMasterApp {
     }
     toast.textContent = message;
     toast.classList.add('active');
-    setTimeout(() => toast.classList.remove('active'), 2500);
+    setTimeout(() => toast.classList.remove('active'), 2800);
   }
 
   downloadFile(content, fileName, mimeType) {
@@ -693,7 +1054,7 @@ class MemoryMasterApp {
   }
 }
 
-// Inicializa a aplicação quando o DOM estiver pronto
+// Inicializa a aplicação
 document.addEventListener('DOMContentLoaded', () => {
   window.app = new MemoryMasterApp();
   window.app.init();
