@@ -97,12 +97,33 @@ class MemoryMasterApp {
     this.firebaseModal = document.getElementById('firebase-modal');
     this.joinRoomModal = document.getElementById('join-room-modal');
     this.groupPodiumModal = document.getElementById('group-podium-modal');
+    this.userProfileModal = document.getElementById('user-profile-modal');
+
+    // Elementos do Menu Lateral Mobile (Estilo QuizMaster)
+    this.mobileDrawerContainer = document.getElementById('mobile-drawer-container');
+    this.mobileDrawerBackdrop = document.getElementById('mobile-drawer-backdrop');
+    this.mobileMenuToggleBtn = document.getElementById('mobile-menu-toggle-btn');
+    this.closeMobileDrawerBtn = document.getElementById('close-mobile-drawer-btn');
+    this.drawerBrandLogo = document.getElementById('drawer-brand-logo');
+    this.drawerAuthBtn = document.getElementById('drawer-auth-btn');
+    this.drawerUserName = document.getElementById('drawer-user-name');
+    this.drawerUserStatus = document.getElementById('drawer-user-status');
+    this.drawerUserAvatarText = document.getElementById('drawer-user-avatar-text');
+    this.drawerUserAvatarImg = document.getElementById('drawer-user-avatar-img');
+    this.drawerBuilderBtn = document.getElementById('drawer-builder-btn');
+    this.drawerMyDecksBtn = document.getElementById('drawer-my-decks-btn');
+    this.drawerRoomsBtn = document.getElementById('drawer-rooms-btn');
+    this.drawerShareBtn = document.getElementById('drawer-share-btn');
+    this.drawerThemeBtn = document.getElementById('drawer-theme-btn');
+    this.drawerThemeName = document.getElementById('drawer-theme-name');
+    this.drawerSoundBtn = document.getElementById('drawer-sound-btn');
   }
 
   setupEventListeners() {
     // Alternar Tema
     document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
       const next = themeManager.cycleNextTheme();
+      this.updateDrawerThemeLabel(next.name);
       this.showToast(`Tema: ${next.name}`);
     });
 
@@ -113,6 +134,7 @@ class MemoryMasterApp {
       btnMute.innerHTML = isMuted
         ? '<i class="fa-solid fa-volume-xmark"></i>'
         : '<i class="fa-solid fa-volume-high"></i>';
+      this.updateDrawerSoundLabel(isMuted);
       this.showToast(isMuted ? 'Som desativado' : 'Som ativado');
     });
 
@@ -139,22 +161,13 @@ class MemoryMasterApp {
     // Controles da Sala de Espera
     document.getElementById('btn-start-room-game')?.addEventListener('click', () => this.startRoomGameAction());
     document.getElementById('btn-leave-room')?.addEventListener('click', () => this.leaveCurrentRoom());
-    document.getElementById('btn-copy-room-pin')?.addEventListener('click', () => this.copyRoomPinAction());
+    document.getElementById('btn-copy-room-pin')?.addEventListener('click', () => this.copyRoomPinLink());
 
-    // Controles no HUD do Jogo
-    document.getElementById('btn-restart-game')?.addEventListener('click', () => {
-      if (this.activeRoom) {
-        alert('Em partidas multiplayer em grupo, use "Sair" para voltar ao menu.');
-      } else {
-        this.startSoloGame();
-      }
-    });
-    document.getElementById('btn-exit-game')?.addEventListener('click', () => {
-      if (this.activeRoom) {
-        this.leaveCurrentRoom();
-      }
-      this.navigateTo('lobby');
-    });
+    // Ações do Jogo e Modais
+    document.getElementById('btn-restart-game')?.addEventListener('click', () => this.restartGame());
+    document.getElementById('btn-exit-game')?.addEventListener('click', () => this.exitGame());
+    document.getElementById('btn-share-deck')?.addEventListener('click', () => this.openDeckShareModal());
+    document.getElementById('btn-copy-share-url')?.addEventListener('click', () => this.copyShareUrl());
 
     // Botões dos Modais de Fim de Jogo
     document.getElementById('btn-modal-replay')?.addEventListener('click', () => {
@@ -191,6 +204,149 @@ class MemoryMasterApp {
 
     this.setupAvatarGrid();
     this.setupBuilderEvents();
+    this.setupMobileDrawerEvents();
+    this.setupUserProfileModalEvents();
+  }
+
+  // --- MENU LATERAL MOBILE (ESTILO QUIZMASTER) ---
+  setupMobileDrawerEvents() {
+    this.mobileMenuToggleBtn?.addEventListener('click', () => {
+      this.openMobileDrawer();
+    });
+
+    this.closeMobileDrawerBtn?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+    });
+
+    this.mobileDrawerBackdrop?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.mobileDrawerContainer?.classList.contains('active')) {
+        this.closeMobileDrawer();
+      }
+    });
+
+    this.drawerBrandLogo?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+      this.navigateTo('lobby');
+    });
+
+    this.drawerBuilderBtn?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+      this.openDeckBuilder();
+    });
+
+    this.drawerMyDecksBtn?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+      this.navigateTo('lobby');
+      const decksSec = document.getElementById('deck-list-container');
+      decksSec?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    this.drawerRoomsBtn?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+      this.navigateTo('lobby');
+      const roomsSec = document.querySelector('.group-rooms-banner');
+      roomsSec?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    this.drawerShareBtn?.addEventListener('click', () => {
+      this.closeMobileDrawer();
+      this.openDeckShareModal();
+    });
+
+    this.drawerThemeBtn?.addEventListener('click', () => {
+      const next = themeManager.cycleNextTheme();
+      this.updateDrawerThemeLabel(next.name);
+      this.showToast(`Tema: ${next.name}`);
+    });
+
+    this.drawerSoundBtn?.addEventListener('click', () => {
+      const isMuted = soundFx.toggleMute();
+      this.updateDrawerSoundLabel(isMuted);
+      const btnHeaderMute = document.getElementById('btn-sound-toggle');
+      if (btnHeaderMute) {
+        btnHeaderMute.innerHTML = isMuted
+          ? '<i class="fa-solid fa-volume-xmark"></i>'
+          : '<i class="fa-solid fa-volume-high"></i>';
+      }
+      this.showToast(isMuted ? 'Som desativado' : 'Som ativado');
+    });
+
+    this.drawerAuthBtn?.addEventListener('click', async () => {
+      const user = authManager.getUser();
+      if (user && !user.isGuest) {
+        this.closeMobileDrawer();
+        this.openModal(this.userProfileModal);
+      } else {
+        try {
+          this.showToast('Conectando com o Google...');
+          await authManager.signInWithGoogle();
+          this.showToast('Login com Google realizado com sucesso!');
+        } catch (err) {
+          if (err.code !== 'auth/popup-closed-by-user') {
+            alert('Falha no login com Google: ' + err.message);
+          }
+        }
+      }
+    });
+  }
+
+  openMobileDrawer() {
+    this.mobileDrawerContainer?.classList.add('active');
+    const currentTheme = themeManager.getCurrentTheme?.() || { name: 'Dark Neon' };
+    this.updateDrawerThemeLabel(currentTheme.name);
+    this.updateDrawerSoundLabel(soundFx.isMuted);
+    soundFx.playClick();
+  }
+
+  closeMobileDrawer() {
+    this.mobileDrawerContainer?.classList.remove('active');
+  }
+
+  updateDrawerThemeLabel(themeName) {
+    if (this.drawerThemeName) {
+      this.drawerThemeName.textContent = `Tema: ${themeName}`;
+    }
+  }
+
+  updateDrawerSoundLabel(isMuted) {
+    if (this.drawerSoundBtn) {
+      this.drawerSoundBtn.textContent = isMuted ? 'Mudo' : 'Ligado';
+    }
+  }
+
+  setupUserProfileModalEvents() {
+    document.getElementById('modal-profile-login-btn')?.addEventListener('click', async () => {
+      try {
+        this.closeModal(this.userProfileModal);
+        this.showToast('Conectando com o Google...');
+        await authManager.signInWithGoogle();
+        this.showToast('Login com Google realizado com sucesso!');
+      } catch (err) {
+        if (err.code !== 'auth/popup-closed-by-user') {
+          alert('Falha no login com Google: ' + err.message);
+        }
+      }
+    });
+
+    document.getElementById('modal-profile-logout-btn')?.addEventListener('click', async () => {
+      this.closeModal(this.userProfileModal);
+      await authManager.logout();
+      this.showToast('Você desconectou da conta Google.');
+    });
+
+    document.getElementById('close-user-profile-modal-btn')?.addEventListener('click', () => {
+      this.closeModal(this.userProfileModal);
+    });
+
+    // Clicar na área de perfil do header desktop abre o modal de perfil
+    document.getElementById('google-profile-area')?.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-google-logout')) return;
+      this.openModal(this.userProfileModal);
+    });
   }
 
   // --- AUTENTICAÇÃO GOOGLE & GUEST ---
@@ -204,9 +360,7 @@ class MemoryMasterApp {
         await authManager.signInWithGoogle();
         this.showToast('Login com Google realizado com sucesso!');
       } catch (err) {
-        if (!isFirebaseConfigured()) {
-          this.openFirebaseConfigModal();
-        } else {
+        if (err.code !== 'auth/popup-closed-by-user') {
           alert('Erro ao autenticar com Google: ' + err.message);
         }
       }
@@ -230,6 +384,22 @@ class MemoryMasterApp {
     const googleUserPhoto = document.getElementById('google-user-photo');
     const googleUserName = document.getElementById('google-user-name');
 
+    // Elementos do Drawer
+    const drawerUserName = this.drawerUserName;
+    const drawerUserStatus = this.drawerUserStatus;
+    const drawerUserAvatarText = this.drawerUserAvatarText;
+    const drawerUserAvatarImg = this.drawerUserAvatarImg;
+    const drawerAuthBtn = this.drawerAuthBtn;
+
+    // Elementos do Modal de Perfil
+    const modalProfileName = document.getElementById('modal-profile-name');
+    const modalProfileEmail = document.getElementById('modal-profile-email');
+    const modalProfileBadge = document.getElementById('modal-profile-badge');
+    const modalProfilePhoto = document.getElementById('modal-profile-photo');
+    const modalProfileEmoji = document.getElementById('modal-profile-emoji');
+    const modalLoginBtn = document.getElementById('modal-profile-login-btn');
+    const modalLogoutBtn = document.getElementById('modal-profile-logout-btn');
+
     if (user.isGuest) {
       if (avatarEl) avatarEl.textContent = user.avatarEmoji || '🎓';
       if (nickInput) {
@@ -238,6 +408,29 @@ class MemoryMasterApp {
       }
       googleLoginBtn?.classList.remove('hidden');
       googleProfileArea?.classList.add('hidden');
+
+      // Drawer em modo Convidado
+      if (drawerUserName) drawerUserName.textContent = user.displayName || 'Estudante';
+      if (drawerUserStatus) drawerUserStatus.textContent = 'Banco Local (GitHub Pages)';
+      if (drawerUserAvatarText) {
+        drawerUserAvatarText.textContent = user.avatarEmoji || '🎓';
+        drawerUserAvatarText.classList.remove('hidden');
+      }
+      if (drawerUserAvatarImg) drawerUserAvatarImg.classList.add('hidden');
+      if (drawerAuthBtn) drawerAuthBtn.textContent = 'Entrar';
+
+      // Modal de Perfil
+      if (modalProfileName) modalProfileName.textContent = user.displayName || 'Estudante';
+      if (modalProfileEmail) modalProfileEmail.textContent = 'Armazenamento local no navegador';
+      if (modalProfileBadge) {
+        modalProfileBadge.textContent = 'Modo Convidado';
+        modalProfileBadge.style.color = 'var(--text-muted)';
+      }
+      modalProfilePhoto?.classList.add('hidden');
+      modalProfileEmoji?.classList.remove('hidden');
+      if (modalProfileEmoji) modalProfileEmoji.textContent = user.avatarEmoji || '🎓';
+      modalLoginBtn?.classList.remove('hidden');
+      modalLogoutBtn?.classList.add('hidden');
     } else {
       if (avatarEl) {
         avatarEl.innerHTML = user.photoURL
@@ -252,6 +445,40 @@ class MemoryMasterApp {
       googleProfileArea?.classList.remove('hidden');
       if (googleUserName) googleUserName.textContent = user.displayName;
       if (googleUserPhoto && user.photoURL) googleUserPhoto.src = user.photoURL;
+
+      // Drawer em modo Google
+      if (drawerUserName) drawerUserName.textContent = user.displayName;
+      if (drawerUserStatus) drawerUserStatus.textContent = user.email || 'Conta Google Conectada';
+      if (user.photoURL && drawerUserAvatarImg) {
+        drawerUserAvatarImg.src = user.photoURL;
+        drawerUserAvatarImg.classList.remove('hidden');
+        drawerUserAvatarText?.classList.add('hidden');
+      } else {
+        if (drawerUserAvatarText) {
+          drawerUserAvatarText.textContent = '⭐';
+          drawerUserAvatarText.classList.remove('hidden');
+        }
+        drawerUserAvatarImg?.classList.add('hidden');
+      }
+      if (drawerAuthBtn) drawerAuthBtn.textContent = 'Perfil';
+
+      // Modal de Perfil
+      if (modalProfileName) modalProfileName.textContent = user.displayName;
+      if (modalProfileEmail) modalProfileEmail.textContent = user.email || 'Autenticado via Google';
+      if (modalProfileBadge) {
+        modalProfileBadge.textContent = 'Google Cloud Ativo';
+        modalProfileBadge.style.color = 'var(--accent-match)';
+      }
+      if (user.photoURL && modalProfilePhoto) {
+        modalProfilePhoto.src = user.photoURL;
+        modalProfilePhoto.classList.remove('hidden');
+        modalProfileEmoji?.classList.add('hidden');
+      } else {
+        modalProfilePhoto?.classList.add('hidden');
+        modalProfileEmoji?.classList.remove('hidden');
+      }
+      modalLoginBtn?.classList.add('hidden');
+      modalLogoutBtn?.classList.remove('hidden');
     }
   }
 

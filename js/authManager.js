@@ -11,22 +11,46 @@
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { auth, isFirebaseConfigured } from './firebaseConfig.js';
 
+const STORAGE_SESSION_USER = 'memorymaster_session_user';
+
 class AuthManager {
   constructor() {
-    this.currentUser = null;
-    this.isGoogleUser = false;
+    this.currentUser = this.loadSessionUser();
+    this.isGoogleUser = !!(this.currentUser && !this.currentUser.isGuest);
     this.listeners = [];
 
-    // Carrega perfil convidado inicial
+    // Perfil convidado padrão
     this.guestProfile = {
       uid: 'guest_' + (localStorage.getItem('memorymaster_guest_id') || this.generateGuestId()),
       displayName: localStorage.getItem('memorymaster_nickname') || 'Estudante',
+      email: '',
       photoURL: null,
       avatarEmoji: localStorage.getItem('memorymaster_avatar') || '🎓',
       isGuest: true
     };
 
+    if (!this.currentUser) {
+      this.currentUser = this.guestProfile;
+    }
+
     this.initAuth();
+  }
+
+  loadSessionUser() {
+    try {
+      const data = localStorage.getItem(STORAGE_SESSION_USER);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  saveSessionUser(user) {
+    if (user && !user.isGuest) {
+      localStorage.setItem(STORAGE_SESSION_USER, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_SESSION_USER);
+    }
   }
 
   generateGuestId() {
@@ -36,27 +60,27 @@ class AuthManager {
   }
 
   initAuth() {
-    if (auth && isFirebaseConfigured()) {
+    if (auth) {
       onAuthStateChanged(auth, (user) => {
         if (user) {
           this.currentUser = {
             uid: user.uid,
-            displayName: user.displayName || 'Jogador Google',
-            email: user.email,
-            photoURL: user.photoURL,
+            displayName: user.displayName || user.email?.split('@')[0] || 'Jogador Google',
+            email: user.email || '',
+            photoURL: user.photoURL || null,
             avatarEmoji: '⭐',
             isGuest: false
           };
           this.isGoogleUser = true;
+          this.saveSessionUser(this.currentUser);
         } else {
           this.currentUser = this.guestProfile;
           this.isGoogleUser = false;
+          this.saveSessionUser(null);
         }
         this.notifyListeners();
       });
     } else {
-      this.currentUser = this.guestProfile;
-      this.isGoogleUser = false;
       this.notifyListeners();
     }
   }
@@ -65,17 +89,26 @@ class AuthManager {
    * Realiza login com Google via Firebase
    */
   async signInWithGoogle() {
-    if (!auth || !isFirebaseConfigured()) {
-      throw new Error('As credenciais do Firebase ainda não foram configuradas. Clique em "Configurar Firebase" para inserir as chaves da sua turma.');
+    let activeAuth = auth;
+    if (!activeAuth) {
+      const { initFirebase } = await import('./firebaseConfig.js');
+      const fb = initFirebase();
+      activeAuth = fb.auth;
+    }
+
+    if (!activeAuth) {
+      throw new Error('Não foi possível inicializar a autenticação do Google.');
     }
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(activeAuth, provider);
       return result.user;
     } catch (error) {
-      console.error('Falha no login com Google:', error);
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error('Falha no login com Google:', error);
+      }
       throw error;
     }
   }

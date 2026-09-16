@@ -37,7 +37,7 @@
   <nav class="navbar" aria-label="Navegação Principal">
     <div class="nav-container">
       <div class="brand" id="nav-lobby">
-        <span class="brand-icon">🧠</span>
+        <span class="brand-icon"><i class="fa-solid fa-memory"></i></span>
         <h1 class="brand-title">Memory<span>Master</span></h1>
       </div>
 
@@ -87,9 +87,136 @@
         <button id="btn-theme-toggle" class="nav-btn icon-btn" title="Alternar Tema Visual">
           <i class="fa-solid fa-palette"></i>
         </button>
+
+        <!-- Botão Menu Mobile Hamburger (Estilo QuizMaster) -->
+        <button id="mobile-menu-toggle-btn" class="nav-btn icon-btn mobile-menu-btn" title="Abrir Menu Lateral" aria-label="Abrir Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
       </div>
     </div>
   </nav>
+
+  <!-- ==================== MENU LATERAL MOBILE (ESTILO QUIZMASTER) ==================== -->
+  <div id="mobile-drawer-container" class="mobile-drawer-container" aria-hidden="true">
+    <!-- Backdrop Overlay -->
+    <div id="mobile-drawer-backdrop" class="drawer-backdrop"></div>
+
+    <!-- Painel Lateral Drawer -->
+    <aside id="mobile-drawer-panel" class="drawer-panel" role="dialog" aria-modal="true">
+      <!-- Topo do Drawer -->
+      <div class="drawer-header">
+        <div id="drawer-brand-logo" class="drawer-brand" title="Voltar ao Início">
+          <div class="drawer-brand-icon">
+            <i class="fa-solid fa-memory"></i>
+          </div>
+          <div>
+            <h3 class="drawer-brand-title">MemoryMaster</h3>
+            <span class="drawer-brand-sub">Menu &amp; Navegação</span>
+          </div>
+        </div>
+        <button id="close-mobile-drawer-btn" class="btn-close-drawer" title="Fechar Menu">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Card de Usuário / Perfil no Drawer -->
+      <div id="drawer-auth-card" class="drawer-auth-card">
+        <div class="drawer-auth-user">
+          <div id="drawer-user-avatar-container" class="drawer-avatar-circle">
+            <span id="drawer-user-avatar-text">🎓</span>
+            <img id="drawer-user-avatar-img" class="drawer-avatar-photo hidden" src="" alt="Avatar">
+          </div>
+          <div class="drawer-user-details">
+            <h4 id="drawer-user-name" class="drawer-user-name">Estudante</h4>
+            <p id="drawer-user-status" class="drawer-user-status">Banco Local (GitHub Pages)</p>
+          </div>
+        </div>
+        <button id="drawer-auth-btn" class="drawer-auth-btn" title="Entrar com Google ou Ver Perfil">
+          Perfil
+        </button>
+      </div>
+
+      <!-- Links de Navegação do Painel Lateral -->
+      <nav class="drawer-nav-list">
+        <!-- 1. Criar Novo Baralho -->
+        <button id="drawer-builder-btn" class="drawer-nav-item">
+          <div class="drawer-nav-icon bg-indigo">
+            <i class="fa-solid fa-circle-plus"></i>
+          </div>
+          <div class="drawer-nav-text">
+            <h4>Criar Novo Baralho</h4>
+            <p>Criador visual ou importação CSV</p>
+          </div>
+        </button>
+
+        <!-- 2. Meus Baralhos Salvos -->
+        <button id="drawer-my-decks-btn" class="drawer-nav-item">
+          <div class="drawer-nav-icon bg-amber">
+            <i class="fa-solid fa-folder-open"></i>
+          </div>
+          <div class="drawer-nav-text">
+            <h4>Meus Baralhos Salvos</h4>
+            <p>Baralhos salvos neste navegador</p>
+          </div>
+        </button>
+
+        <!-- 3. Salas & Rankings -->
+        <button id="drawer-rooms-btn" class="drawer-nav-item">
+          <div class="drawer-nav-icon bg-gold">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <div class="drawer-nav-text">
+            <h4>Salas &amp; Rankings</h4>
+            <p>Pódios ao vivo, PINs e colocações</p>
+          </div>
+        </button>
+
+        <!-- 4. Compartilhar Baralho -->
+        <button id="drawer-share-btn" class="drawer-nav-item">
+          <div class="drawer-nav-icon bg-purple">
+            <i class="fa-solid fa-share-nodes"></i>
+          </div>
+          <div class="drawer-nav-text">
+            <h4>Compartilhar Baralho</h4>
+            <p>Link portátil, encurtador e QR Code</p>
+          </div>
+        </button>
+      </nav>
+
+      <!-- Rodapé do Drawer -->
+      <div class="drawer-footer">
+        <!-- Status de Conexão no Drawer -->
+        <div class="drawer-status-row">
+          <span class="drawer-status-label">Status:</span>
+          <span id="drawer-network-status-badge" class="drawer-status-value">
+            <span class="pulse-dot"></span> <span id="drawer-network-text" class="text-emerald">Conectado (Nuvem)</span>
+          </span>
+        </div>
+
+        <!-- Seletor de Tema -->
+        <button id="drawer-theme-btn" type="button" class="drawer-control-row">
+          <span class="drawer-control-label">
+            <span>🎨</span>
+            <span id="drawer-theme-name">Tema: Dark Neon</span>
+          </span>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+
+        <!-- Alternador de Som -->
+        <div class="drawer-control-row">
+          <div class="drawer-control-label">
+            <i class="fa-solid fa-volume-high"></i>
+            <span>Efeitos Sonoros</span>
+          </div>
+          <button id="drawer-sound-btn" class="drawer-pill-btn">
+            Ligado
+          </button>
+        </div>
+
+        <p class="drawer-version-tag">MemoryMaster v2.2.0 • Offline &amp; GitHub Pages</p>
+      </div>
+    </aside>
+  </div>
 
   <!-- Container Principal das Telas da SPA -->
   <div class="app-container">
@@ -581,6 +708,39 @@
       <button type="button" id="btn-podium-close" class="btn-modal-primary" style="width: 100%; margin-top: 18px;">
         Voltar ao Lobby
       </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DE PERFIL DO USUÁRIO ==================== -->
+  <div id="user-profile-modal" class="modal-overlay" aria-hidden="true" role="dialog">
+    <div class="modal-content modal-profile-content">
+      <div class="modal-icon-top" style="color: var(--accent-primary);"><i class="fa-solid fa-user-gear"></i></div>
+      <h2 class="modal-title">Perfil do Jogador</h2>
+      <p class="modal-subtitle">Informações da sua conta e sincronização em nuvem</p>
+      
+      <div class="profile-card-modal">
+        <div class="profile-modal-avatar">
+          <span id="modal-profile-emoji" class="modal-profile-emoji">🎓</span>
+          <img id="modal-profile-photo" class="modal-profile-photo hidden" src="" alt="Foto">
+        </div>
+        <div class="profile-modal-info">
+          <h3 id="modal-profile-name" class="profile-modal-name">Estudante</h3>
+          <p id="modal-profile-email" class="profile-modal-email">Convidado Local</p>
+          <span id="modal-profile-badge" class="profile-modal-badge">Modo Convidado</span>
+        </div>
+      </div>
+
+      <div class="modal-actions-col">
+        <button type="button" id="modal-profile-login-btn" class="btn-modal-primary" style="width: 100%;">
+          <i class="fa-brands fa-google"></i> Conectar com Google
+        </button>
+        <button type="button" id="modal-profile-logout-btn" class="btn-modal-danger hidden" style="width: 100%;">
+          <i class="fa-solid fa-right-from-bracket"></i> Desconectar da Conta
+        </button>
+        <button type="button" id="close-user-profile-modal-btn" class="btn-modal-secondary" style="width: 100%; margin-top: 6px;">
+          Fechar
+        </button>
+      </div>
     </div>
   </div>
 
